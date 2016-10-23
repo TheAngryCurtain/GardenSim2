@@ -20,6 +20,8 @@ public class TimeManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+
+        Init(new CustomDateTime());
     }
 
     public TimeOfDay GetCurrentTimeOfDay()
@@ -75,7 +77,7 @@ public class TimeManager : MonoBehaviour
             float curTimeSeconds = mDateTime.GetDayTimeSeconds();
             float rotation = Mathf.Lerp(0.0f, 360.0f, (curTimeSeconds / TimeConstants.SECONDS_PER_DAY));
             Quaternion sunRotation = cSun.transform.rotation;
-            sunRotation = Quaternion.Euler(rotation, sunRotation.y, sunRotation.z);
+            sunRotation = Quaternion.Euler(rotation, 90f, sunRotation.z);
             cSun.transform.rotation = sunRotation;
         }
     }

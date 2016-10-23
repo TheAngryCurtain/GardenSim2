@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class TerrainManager : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class TerrainManager : MonoBehaviour
     [SerializeField] private GameObject _waterPrefab;
 
     private Terrain _terrain;
+    private float _minDetailHeight = 3f;
+    private float _maxDetailHeight = 8f;
 
     void Awake()
     {
@@ -27,6 +30,7 @@ public class TerrainManager : MonoBehaviour
 
         // build terrain
         int worldSeed = UnityEngine.Random.Range(0, 100000);
+        Debug.Log(worldSeed);
         data = CreateMultiLevelTerrain(worldSeed, ref data);
 
         // reposition terrain
@@ -52,26 +56,62 @@ public class TerrainManager : MonoBehaviour
         float[][] lowHeights = generator.Generate(noiseSeedGen.Next(), terrainSize, lowOctaves);
 
         int detailOctaves = 1; // grass
+        int treeOctaves = 4; // trees
         float[][] detailNoise = generator.Generate(noiseSeedGen.Next(), terrainSize, detailOctaves);
+        float[][] treeNoise = generator.Generate(noiseSeedGen.Next(), terrainSize, treeOctaves);
 
         baseHeights = BlendHeights(baseHeights, highHeights, lowHeights);
         AssignTextures(ref data, baseHeights);
-        PlaceDetails(ref data, baseHeights, detailNoise);
-
+        PlaceDetails(ref data, detailNoise);
+        PlaceTrees(ref data, noiseSeedGen.Next(), terrainSize, treeNoise);
         data.SetHeights(0, 0, ConvertTo2D(baseHeights));
 
         return data;
     }
 
-    private void PlaceDetails(ref TerrainData data, float[][] heights, float[][] detailNoise)
+    private void PlaceTrees(ref TerrainData data, int seed, int size, float[][] treeNoise)
     {
-        float minHeight = 0.2f;
-        float maxHeight = 0.4f;
+        List<TreeInstance> instances = new List<TreeInstance>();
+        System.Random treeGen = new System.Random(seed);
+        float groundHeight;
+        float treeOffsetMin = 0.75f;
+        float treeOffsetMax = 1.25f;
+        float treeThreshold = 0.925f;
 
+        for (int i = 0; i < size; ++i)
+        {
+            for (int j = 0; j < size; ++j)
+            {
+                if (treeNoise[i][j] >= treeThreshold)
+                {
+                    groundHeight = data.GetHeight(i, j);
+                    if (groundHeight > _minDetailHeight && groundHeight < _maxDetailHeight)
+                    {
+                        TreeInstance tree = new TreeInstance();
+                        tree.prototypeIndex = 0; // first tree prototype on the terrain
+                        tree.position = new Vector3(i / (float)size, groundHeight, j / (float)size);
+                        tree.rotation = Mathf.Deg2Rad * treeGen.Next(360);
+                        tree.heightScale = (float)(treeGen.NextDouble() * (treeOffsetMax - treeOffsetMin)) + treeOffsetMin;
+                        tree.widthScale = (float)(treeGen.NextDouble() * (treeOffsetMax - treeOffsetMin)) + treeOffsetMin;
+                        tree.color = Color.white; // use seasonal theme for this later
+                        tree.lightmapColor = Color.white;
+
+                        instances.Add(tree);
+                    }
+                }
+            }
+        }
+
+        data.treeInstances = instances.ToArray();
+    }
+
+    private void PlaceDetails(ref TerrainData data, float[][] detailNoise)
+    {
         float detailThreshold = 0.75f;
         int numberDetails = data.detailPrototypes.Length;
         int detailSize = data.detailWidth; // should be the same as the heights size
         int[,] detailData;
+        float height;
 
         for (int k = 0; k < numberDetails; ++k)
         {
@@ -80,10 +120,10 @@ public class TerrainManager : MonoBehaviour
             {
                 for (int j = 0; j < detailSize; ++j)
                 {
-                    float height = heights[i][j]; // these are probably backwards
+                    height = data.GetHeight(i, j);
                     float detailValue = detailNoise[i][j];
 
-                    if (height >= minHeight && height <= maxHeight)
+                    if (height > _minDetailHeight && height < _maxDetailHeight)
                     {
                         detailData[i, j] = 0;
                         if (detailValue >= detailThreshold)
@@ -114,7 +154,7 @@ public class TerrainManager : MonoBehaviour
                 }
                 else if (lowH[i][j] <= minHeight)
                 {
-                    baseH[i][j] -= lowH[i][j];
+                    baseH[i][j] *= 0.25f;
                 }
             }
         }
@@ -151,10 +191,8 @@ public class TerrainManager : MonoBehaviour
                     splatmapData[j, i, 0] = 1; // dirt with grass bits
                 else if (height <= 0.8f)
                     splatmapData[j, i, 1] = 1; // grass
-                else if (height <= 0.9f)
-                    splatmapData[j, i, 2] = 1; // rock
                 else
-                    splatmapData[j, i, 4] = 1; // sand
+                    splatmapData[j, i, 2] = 1; // rock
 
             }
 		}
