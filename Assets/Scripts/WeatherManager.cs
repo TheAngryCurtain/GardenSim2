@@ -41,6 +41,8 @@ public class WeatherManager : MonoBehaviour
     private int _maxWindAngle = 15;
     private int _minWeatherDuration = 3;
     private int _maxWeatherDuration = 18;
+    private float _rainWindModifier = 5f;
+    private float _snowWindModifier = 8f;
 
     private Light _sun;
     private float _sunnyShadowStrength = 1f;
@@ -68,8 +70,7 @@ public class WeatherManager : MonoBehaviour
         System.Random prng = new System.Random(worldSeed);
 
         _sun = GameManager.Instance.TimeManager.Sun;
-        _rain = ((GameObject)Instantiate(_rainPrefab, _rainPrefab.transform.position, _rainPrefab.transform.rotation)).GetComponent<ParticleSystem>();
-        _snow = ((GameObject)Instantiate(_snowPrefab, _snowPrefab.transform.position, _snowPrefab.transform.rotation)).GetComponent<ParticleSystem>();
+        InitWeatherPrefabs();
 
         _currentDay = GameManager.Instance.TimeManager.CurrentDate.GetDay();
         _currentSeason = GameManager.Instance.TimeManager.CurrentDate.GetSeason();
@@ -79,6 +80,18 @@ public class WeatherManager : MonoBehaviour
 
         _weatherSeed = prng.Next();
         _biweeklyWeather = GenerateNextWeather(_forecastLength, _weatherSeed);
+
+        UpdateTodaysWeather(_currentDay);
+    }
+
+    private void InitWeatherPrefabs()
+    {
+        _rain = ((GameObject)Instantiate(_rainPrefab, Vector3.zero, _rainPrefab.transform.rotation)).GetComponent<ParticleSystem>();
+        _snow = ((GameObject)Instantiate(_snowPrefab, Vector3.zero, _snowPrefab.transform.rotation)).GetComponent<ParticleSystem>();
+        _rain.transform.SetParent(GameManager.Instance.CameraController.transform);
+        _snow.transform.SetParent(GameManager.Instance.CameraController.transform);
+        _rain.transform.localPosition = new Vector3(0f, 50f, 0f);
+        _snow.transform.localPosition = new Vector3(0f, 50f, 0f);
     }
 
     private List<WeatherInfo> GenerateNextWeather(int numberOfDays, int weatherSeed)
@@ -96,7 +109,7 @@ public class WeatherManager : MonoBehaviour
             WeatherInfo w = new WeatherInfo();
 
             // wind speed
-            w.WindSpeed = (float)weatherGen.NextDouble() + 1;
+            w.WindSpeed = (float)weatherGen.NextDouble();
 
             // wind direction
             directionModifier = weatherGen.Next(-1, 1 + 1);
@@ -146,7 +159,7 @@ public class WeatherManager : MonoBehaviour
                     {
                         w.MultiDay = true;
                         weatherCarryOver = true;
-                        overflowHours = hoursPerDay - (w.StartTime + w.Duration);
+                        overflowHours = (w.StartTime + w.Duration) - hoursPerDay;
                     }
 
                     w.WeatherType = (w.Temp < 0f ? eWeatherType.Snow : eWeatherType.Rain);
@@ -159,6 +172,8 @@ public class WeatherManager : MonoBehaviour
                     w.WeatherType = (w.Severity > 5 ? eWeatherType.Cloudy : eWeatherType.Sunny);
                 }
             }
+
+            info.Add(w);
         }
 
         return info;
@@ -170,11 +185,25 @@ public class WeatherManager : MonoBehaviour
         WeatherInfo today = _biweeklyWeather[weeklyIndex];
 
         // TODO update UI
+        Debug.LogFormat("Today's Weather: type: {0}, wind speed: {1}, wind direction: {2}, Avg. temp: {3}, % precip: {4}, start time: {5}, duration: {6}, severity: {7}, multiday: {8}",
+            today.WeatherType, today.WindSpeed, today.WindDirection, today.AverageTemp, today.ChanceOfPrecipitation, today.StartTime, today.Duration, today.Severity, today.MultiDay);
 
         // wind
         _windZone.windMain = today.WindSpeed;
         _windZone.windTurbulence = today.Severity / 10f;
         this.transform.rotation = Quaternion.Euler(today.WindDirection);
+
+        float windForwardX = this.transform.forward.x;
+        float windFowardZ = this.transform.forward.z;
+
+        // affect particle systems from wind
+        ParticleSystem.ForceOverLifetimeModule rainVelocity = _rain.forceOverLifetime;
+        rainVelocity.x = windForwardX + _rainWindModifier * today.Severity;
+        rainVelocity.z = windFowardZ + _rainWindModifier * today.Severity;
+
+        ParticleSystem.ForceOverLifetimeModule snowVelocity = _snow.forceOverLifetime;
+        snowVelocity.x = windForwardX + _snowWindModifier * today.Severity;
+        snowVelocity.z = windFowardZ + _snowWindModifier * today.Severity;
 
         // light/precipitation
         _rain.gameObject.SetActive(false);
@@ -185,11 +214,13 @@ public class WeatherManager : MonoBehaviour
             case eWeatherType.Sunny:
                 _sun.color = Color.white;
                 _sun.shadowStrength = _sunnyShadowStrength;
+                _windZone.windTurbulence *= 0.5f;
                 break;
 
             case eWeatherType.Cloudy:
                 _sun.color = Color.grey;
                 _sun.shadowStrength = _cloudyShadowStrength;
+                _windZone.windTurbulence *= 0.5f;
                 break;
 
             case eWeatherType.Rain:
@@ -235,6 +266,6 @@ public class WeatherManager : MonoBehaviour
     private void OnWorldCreated()
     {
         int worldSeed = GameManager.Instance.TerrainManager.WorldSeed;
-        //Init(worldSeed);
+        Init(worldSeed);
     }
 }
