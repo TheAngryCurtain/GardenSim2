@@ -48,6 +48,7 @@ public class WeatherManager : MonoBehaviour
     private float _sunnyShadowStrength = 1f;
     private float _cloudyShadowStrength = 0.25f;
 
+    private int _timeScale;
     private int _weatherSeed;
     private int _currentDay;
     private Season _currentSeason;
@@ -81,7 +82,7 @@ public class WeatherManager : MonoBehaviour
         _weatherSeed = prng.Next();
         _biweeklyWeather = GenerateNextWeather(_forecastLength, _weatherSeed);
 
-        UpdateTodaysWeather(_currentDay);
+        UpdateTodaysWeather(_currentDay, 0);
     }
 
     private void InitWeatherPrefabs()
@@ -103,7 +104,7 @@ public class WeatherManager : MonoBehaviour
         float angle = 0;
         bool weatherCarryOver = false;
         int overflowHours = 0;
-        int hoursPerDay = (int)TimeConstants.HOURS_PER_TOD_CYCLE;
+        int hoursPerDay = 24;
         for (int i = 0; i < numberOfDays; ++i)
         {
             WeatherInfo w = new WeatherInfo();
@@ -126,7 +127,7 @@ public class WeatherManager : MonoBehaviour
             w.AverageTemp = _temperatureCurve.Evaluate(dayIndex * step);
 
             w.DailyVariation = (float)weatherGen.NextDouble() + 1;
-            w.NightVariation = w.DailyVariation + (int)_currentSeason;
+            w.NightVariation = w.DailyVariation + (1 + (int)_currentSeason);
 
             // precipitation
             if (weatherCarryOver)
@@ -147,12 +148,12 @@ public class WeatherManager : MonoBehaviour
                 // new weather
                 int chance = weatherGen.Next(0, 100 + 1);
                 w.ChanceOfPrecipitation = chance;
-                w.Severity = chance / 10;
+                w.Severity = weatherGen.Next(0, 10 + 1) / 20;
 
-                int actual = weatherGen.Next(0, 100 + 1);
-                if (actual > chance)
+                int actual = weatherGen.Next(0, 100 + 1); // need to do something here to reduce the chance of rain
+                if (actual < chance)
                 {
-                    // Ollie says "IT'S GONNA RAIN!"
+                    // let it precipitate!
                     w.StartTime = weatherGen.Next(0, hoursPerDay);
                     w.Duration = weatherGen.Next(_minWeatherDuration, _maxWeatherDuration);
                     if (w.StartTime + w.Duration > hoursPerDay)
@@ -179,66 +180,126 @@ public class WeatherManager : MonoBehaviour
         return info;
     }
 
-    private void UpdateTodaysWeather(int day)
+    private void UpdateTodaysWeather(int day, int hour)
     {
         int weeklyIndex = day % _forecastLength;
         WeatherInfo today = _biweeklyWeather[weeklyIndex];
 
-        // TODO update UI
-        Debug.LogFormat("Today's Weather: type: {0}, wind speed: {1}, wind direction: {2}, Avg. temp: {3}, % precip: {4}, start time: {5}, duration: {6}, severity: {7}, multiday: {8}",
-            today.WeatherType, today.WindSpeed, today.WindDirection, today.AverageTemp, today.ChanceOfPrecipitation, today.StartTime, today.Duration, today.Severity, today.MultiDay);
-
-        // wind
-        _windZone.windMain = today.WindSpeed;
-        _windZone.windTurbulence = today.Severity / 10f;
-        this.transform.rotation = Quaternion.Euler(today.WindDirection);
-
-        float windForwardX = this.transform.forward.x;
-        float windFowardZ = this.transform.forward.z;
-
-        // affect particle systems from wind
-        ParticleSystem.ForceOverLifetimeModule rainVelocity = _rain.forceOverLifetime;
-        rainVelocity.x = windForwardX + _rainWindModifier * today.Severity;
-        rainVelocity.z = windFowardZ + _rainWindModifier * today.Severity;
-
-        ParticleSystem.ForceOverLifetimeModule snowVelocity = _snow.forceOverLifetime;
-        snowVelocity.x = windForwardX + _snowWindModifier * today.Severity;
-        snowVelocity.z = windFowardZ + _snowWindModifier * today.Severity;
-
-        // light/precipitation
-        _rain.gameObject.SetActive(false);
-        _snow.gameObject.SetActive(false);
-
-        switch (today.WeatherType)
+        if (hour == 0)
         {
-            case eWeatherType.Sunny:
-                _sun.color = Color.white;
-                _sun.shadowStrength = _sunnyShadowStrength;
-                _windZone.windTurbulence *= 0.5f;
-                break;
+            // TODO update UI
+            Debug.LogFormat("Today's Weather: type: {0}, wind speed: {1}, wind direction: {2}, Temp: {3}, % precip: {4}, start time: {5}, duration: {6}, severity: {7}, multiday: {8}",
+                today.WeatherType, today.WindSpeed, today.WindDirection, today.Temp, today.ChanceOfPrecipitation, today.StartTime, today.Duration, today.Severity, today.MultiDay);
 
-            case eWeatherType.Cloudy:
-                _sun.color = Color.grey;
-                _sun.shadowStrength = _cloudyShadowStrength;
-                _windZone.windTurbulence *= 0.5f;
-                break;
+            // wind
+            _windZone.windMain = today.WindSpeed;
+            _windZone.windTurbulence = today.Severity / 10f;
+            this.transform.rotation = Quaternion.Euler(today.WindDirection);
 
-            case eWeatherType.Rain:
-                _sun.color = Color.grey;
-                _sun.shadowStrength = _cloudyShadowStrength;
+            float windForwardX = this.transform.forward.x;
+            float windFowardZ = this.transform.forward.z;
 
-                _rain.gameObject.SetActive(true);
-                break;
+            // affect particle systems from wind
+            ParticleSystem.ForceOverLifetimeModule rainVelocity = _rain.forceOverLifetime;
+            rainVelocity.x = windForwardX + _rainWindModifier * today.Severity;
+            rainVelocity.z = windFowardZ + _rainWindModifier * today.Severity;
 
-            case eWeatherType.Snow:
-                _snow.gameObject.SetActive(true);
-                break;
+            ParticleSystem.ForceOverLifetimeModule snowVelocity = _snow.forceOverLifetime;
+            snowVelocity.x = windForwardX + _snowWindModifier * today.Severity;
+            snowVelocity.z = windFowardZ + _snowWindModifier * today.Severity;
+
+            // light/precipitation
+            if (today.WeatherType != eWeatherType.Rain && _rain.gameObject.activeInHierarchy)
+            {
+                _rain.gameObject.SetActive(false);
+            }
+
+            if (today.WeatherType != eWeatherType.Snow && _snow.gameObject.activeInHierarchy)
+            {
+                _snow.gameObject.SetActive(false);
+            }
+
+            Color nextColor = Color.white;
+            float nextStrength = 0;
+            switch (today.WeatherType)
+            {
+                case eWeatherType.Sunny:
+                    nextColor = Color.white;
+                    nextStrength = _sunnyShadowStrength;
+                    _windZone.windTurbulence *= 0.5f;
+                    break;
+
+                case eWeatherType.Cloudy:
+                    nextColor = Color.grey;
+                    nextStrength = _cloudyShadowStrength;
+                    _windZone.windTurbulence *= 0.5f;
+                    break;
+
+                case eWeatherType.Rain:
+                    nextColor = Color.grey;
+                    nextStrength = _cloudyShadowStrength;
+                    break;
+
+                case eWeatherType.Snow:
+                    break;
+            }
+
+            if (_sun.color != nextColor)
+            {
+                StartCoroutine(LerpColor(nextColor));
+            }
+            if (_sun.shadowStrength != nextStrength)
+            {
+                StartCoroutine(LerpShadowStrength(nextStrength));
+            }
+
+            if (weeklyIndex == _forecastLength - 1)
+            {
+                // we need new weather!
+                _biweeklyWeather = GenerateNextWeather(_forecastLength, _weatherSeed);
+            }
         }
 
-        if (weeklyIndex == _forecastLength - 1)
+        if (today.StartTime == hour)
         {
-            // we need new weather!
-            _biweeklyWeather = GenerateNextWeather(_forecastLength, _weatherSeed);
+            if (today.WeatherType == eWeatherType.Rain)
+            {
+                _rain.gameObject.SetActive(true);
+            }
+            else if (today.WeatherType == eWeatherType.Snow)
+            {
+                _snow.gameObject.SetActive(true);
+            }
+        }
+        else if ((!today.MultiDay && today.StartTime + today.Duration == hour) || (today.MultiDay && today.Duration == hour))
+        {
+            if (today.WeatherType == eWeatherType.Rain)
+            {
+                _rain.gameObject.SetActive(false);
+            }
+            else if (today.WeatherType == eWeatherType.Snow)
+            {
+                _snow.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    private IEnumerator LerpColor(Color next)
+    {
+        while (_sun.color != next)
+        {
+            _sun.color = Color.Lerp(_sun.color, next, Time.deltaTime);
+
+            yield return new WaitForEndOfFrame();
+        }
+    }
+
+    private IEnumerator LerpShadowStrength(float next)
+    {
+        while (_sun.shadowStrength != next)
+        {
+            _sun.shadowStrength = Mathf.Lerp(_sun.shadowStrength, next, Time.deltaTime);
+            yield return new WaitForEndOfFrame();
         }
     }
 
@@ -251,10 +312,15 @@ public class WeatherManager : MonoBehaviour
 
         TimeChangedArgs changed = (TimeChangedArgs)args;
         int day = changed.dateTime.GetDay();
-        if (_currentDay != day)
+        int hour = changed.dateTime.GetHour();
+        if (changed.DayChanged || changed.HourChanged)
         {
-            _currentDay = day;
-            UpdateTodaysWeather(_currentDay);
+            if (changed.DayChanged)
+            {
+                _currentDay = day;
+            }
+
+            UpdateTodaysWeather(_currentDay, hour);
         }
     }
 

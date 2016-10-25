@@ -83,13 +83,14 @@ public class TimeManager : MonoBehaviour
 
     private void OnPlayerDateTimeChanged(object sender, EventArgs e)
     {
-        Debug.Log("DateTimeChanged!");
+        //Debug.Log("DateTimeChanged!");
         if (sender != null)
         {
             CustomDateTime timeFromEvent = (CustomDateTime)sender;
             TimeChangedArgs args = new TimeChangedArgs();
             if (timeFromEvent != null)
             {
+                args.dateTime = timeFromEvent;
                 if(mCurrentHour != timeFromEvent.GetHour())
                 {
                     args.HourChanged = true;
@@ -149,11 +150,11 @@ public class TimeManager : MonoBehaviour
                     {
                         mCurrentTimeOfDay = TimeOfDay.Dusk;
                     }
+
+                    timeFromEvent.PrintDateTime();
                 }
 
                 args.timeOfDay = mCurrentTimeOfDay;
-
-                timeFromEvent.PrintDateTime();
 
                 if (OnTimeChanged != null)
                 {

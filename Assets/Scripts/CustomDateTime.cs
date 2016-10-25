@@ -116,7 +116,7 @@ public class CustomDateTime
 
     public void PrintDateTime()
     {
-        string debugPrint = string.Format("(CurrentTime) - [Year: {0}] [Season: {1}] [Month: {2}] [Day: {3}] [Seconds: {4}]", mYear, mSeason.ToString(), mMonth, mDay, mDayTimeSeconds);
+        string debugPrint = string.Format("(CurrentTime) - [Year: {0}] [Season: {1}] [Month: {2}] [Day: {3}] [Hour: {4}]", mYear, mSeason.ToString(), mMonth, mDay, mHour);
         Debug.Log(debugPrint);
         debugPrint = null;
     }
