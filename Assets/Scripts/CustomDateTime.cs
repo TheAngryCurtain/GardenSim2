@@ -11,6 +11,7 @@ public class CustomDateTime
     private int mDay;
     private int mMonth;
     private int mYear;
+    private Season mSeason;
     private float mDayTimeSeconds;
 
     public int GetHour()
@@ -33,6 +34,11 @@ public class CustomDateTime
         return mYear;
     }
 
+    public Season GetSeason()
+    {
+        return mSeason;
+    }
+
     public float GetDayTimeSeconds()
     {
         return mDayTimeSeconds;
@@ -44,17 +50,19 @@ public class CustomDateTime
         mHour = 0;
         mDay = 1;
         mMonth = 1;
-        mYear = 2000;
+        mYear = 1;
+        mSeason = Season.Spring;
         mDayTimeSeconds = 0.0f;
     }
 
     // Specific DateTime ctor
-    public CustomDateTime(int hour, int day, int month, int year, float dayTimeSeconds)
+    public CustomDateTime(int hour, int day, int month, int year, Season season, float dayTimeSeconds)
     {
         mHour = hour;
         mDay = day;
         mMonth = month;
         mYear = year;
+        mSeason = season;
         mDayTimeSeconds = dayTimeSeconds;
     }
 
@@ -86,6 +94,8 @@ public class CustomDateTime
                     mMonth++;
                     mDay = 1;
 
+                    mSeason = (Season)(mMonth % TimeConstants.MONTHS_PER_SEASON);
+
                     if (mMonth >= TimeConstants.MONTHS_PER_YEAR)
                     {
                         mYear++;
@@ -106,7 +116,7 @@ public class CustomDateTime
 
     public void PrintDateTime()
     {
-        string debugPrint = string.Format("(CurrentTime) - [Year: {0}] [Month: {1}] [Day: {2}] [Seconds: {3}]", mYear, mMonth, mDay, mDayTimeSeconds);
+        string debugPrint = string.Format("(CurrentTime) - [Year: {0}] [Season: {1}] [Month: {2}] [Day: {3}] [Seconds: {4}]", mYear, mSeason.ToString(), mMonth, mDay, mDayTimeSeconds);
         Debug.Log(debugPrint);
         debugPrint = null;
     }

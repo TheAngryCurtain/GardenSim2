@@ -1,9 +1,12 @@
 ﻿using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
 public class TerrainManager : MonoBehaviour
 {
+    public Action OnWorldCreated;
+
 	public enum ObjectID { Grass = 0, Rock, Tree };
 	public GameObject[] ObjectPrefabs;
 
@@ -11,8 +14,11 @@ public class TerrainManager : MonoBehaviour
     [SerializeField] private GameObject _waterPrefab;
 
     private Terrain _terrain;
+    private int _worldSeed;
     private float _minDetailHeight = 3f;
     private float _maxDetailHeight = 8f;
+
+    public int WorldSeed { get { return _worldSeed; } }
 
     void Awake()
     {
@@ -28,17 +34,19 @@ public class TerrainManager : MonoBehaviour
 
 		TerrainData data = _terrain.terrainData;
 
-        // build terrain
-        int worldSeed = UnityEngine.Random.Range(0, 100000);
-        Debug.Log(worldSeed);
-        data = CreateMultiLevelTerrain(worldSeed, ref data);
+        _worldSeed = UnityEngine.Random.Range(0, 100000);
+        Debug.Log(_worldSeed);
+        data = CreateMultiLevelTerrain(_worldSeed, ref data);
 
-        // reposition terrain
         Vector3 newPos = new Vector3(-data.heightmapWidth / 2f, 0f, -data.heightmapWidth / 2f);
         terrainObj.transform.position = newPos;
 
-        // water plane
         GameObject.Instantiate(_waterPrefab, newPos, Quaternion.identity);
+
+        if (OnWorldCreated != null)
+        {
+            OnWorldCreated();
+        }
 	}
 
     // create and merge some noise to create interesting terrain height map

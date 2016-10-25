@@ -24,6 +24,16 @@ public class GameManager : MonoBehaviour
     [SerializeField] private CameraController _cameraController;
     public CameraController CameraController { get { return _cameraController; } set { _cameraController = value; } }
 
+    [HideInInspector]
+    [SerializeField]
+    private TimeManager _timeManager;
+    public TimeManager TimeManager { get { return _timeManager; } set { _timeManager = value; } }
+
+    [HideInInspector]
+    [SerializeField]
+    private WeatherManager _weatherManager;
+    public WeatherManager WeatherManager { get { return _weatherManager; } set { _weatherManager = value; } }
+
     void Awake()
     {
         Instance = this;

@@ -4,8 +4,6 @@ using System;
 
 public class TimeManager : MonoBehaviour
 {
-    public static TimeManager Instance;
-
     public event EventHandler OnTimeChanged;
 
     private float mTotalTimePassed;
@@ -16,18 +14,16 @@ public class TimeManager : MonoBehaviour
     private int mCurrentDay;
     private int mCurrentMonth;
     private int mCurrentYear;
+    private Season mCurrentSeason;
 
     void Awake()
     {
-        Instance = this;
+        GameManager.Instance.TimeManager = this;
 
         Init(new CustomDateTime());
     }
 
-    public TimeOfDay GetCurrentTimeOfDay()
-    {
-        return mCurrentTimeOfDay;
-    }
+    public CustomDateTime CurrentDate { get { return mDateTime; } }
 
     [SerializeField]
     private int tTimeScale = 5;
@@ -36,12 +32,15 @@ public class TimeManager : MonoBehaviour
     private GameObject mSunPrefab;
     private GameObject cSun;
 
+    public Light Sun { get { return cSun.GetComponent<Light>(); } }
+
     public void Init(CustomDateTime dateTime)
     {
         mDateTime = dateTime;
 
         mCurrentTimeOfDay = TimeOfDay.EarlyMorning;
         mTotalTimePassed = 0.0f;
+        mCurrentSeason = Season.Spring;
 
         mCurrentHour = mDateTime.GetHour();
         mCurrentDay = mDateTime.GetDay();
@@ -111,11 +110,17 @@ public class TimeManager : MonoBehaviour
                     args.YearChanged = true;
                 }
 
+                if (mCurrentSeason != timeFromEvent.GetSeason())
+                {
+                    args.SeasonChanged = true;
+                }
+
                 // Store the current date values locally
                 mCurrentHour = timeFromEvent.GetHour();
                 mCurrentDay = timeFromEvent.GetDay();
                 mCurrentMonth = timeFromEvent.GetMonth();
                 mCurrentYear = timeFromEvent.GetYear();
+                mCurrentSeason = timeFromEvent.GetSeason();
 
                 // update ToD
                 if (args.HourChanged)
@@ -169,12 +174,22 @@ public enum TimeOfDay
     Night                   // 12AM->4AM
 }
 
+public enum Season
+{
+    Spring,
+    Summer,
+    Autumn,
+    Winter
+}
+
 public class TimeChangedArgs : EventArgs
 {
     public CustomDateTime dateTime;
     public TimeOfDay timeOfDay;
+    public Season season;
     public bool HourChanged;
     public bool DayChanged;
     public bool MonthChanged;
     public bool YearChanged;
+    public bool SeasonChanged;
 }
