@@ -33,12 +33,31 @@ public class CameraController : MonoBehaviour
     void Start ()
 	{
         GameManager.Instance.InputController.AxisInput += HandleDirectionalInput;
+        GameManager.Instance.InputController.MouseButtonInput += HandleMouseInput;
+        GameManager.Instance.InputController.MouseScrollInput += HandleMouseScroll;
 
-		currentZoomLevel = maxZoomLevel;
+        currentZoomLevel = maxZoomLevel;
 	}
-	
-	// Move the camera based on user input
-	public void moveCamera(float translationH, float translationV, float scrollSpeed)
+
+    private void HandleMouseInput(Vector3 mousePosition)
+    {
+        Debug.Log(mousePosition);
+    }
+
+    private void HandleMouseScroll(float scroll)
+    {
+        if (scroll > 0f)
+        {
+            Zoom(ZoomDirection.IN);
+        }
+        else if (scroll < 0f)
+        {
+            Zoom(ZoomDirection.OUT);
+        }
+    }
+
+    // Move the camera based on user input
+    public void moveCamera(float translationH, float translationV, float scrollSpeed)
 	{
 		translationH *= Time.deltaTime * scrollSpeed * currentZoomLevel;
 		translationV *= Time.deltaTime * scrollSpeed * currentZoomLevel;
@@ -61,11 +80,11 @@ public class CameraController : MonoBehaviour
 	}
 
 	// called from game manager
-	public void Zoom(int direction)
+	private void Zoom(ZoomDirection direction)
 	{
 		switch (direction)
 		{
-		case (int)ZoomDirection.IN:
+		case ZoomDirection.IN:
 			if (currentZoomLevel > maxZoomLevel)
 			{
 				currentZoomLevel--;
@@ -73,7 +92,7 @@ public class CameraController : MonoBehaviour
 			}
 			break;
 
-		case (int)ZoomDirection.OUT:
+		case ZoomDirection.OUT:
 			if (currentZoomLevel < minZoomLevel)
 			{
 				currentZoomLevel++;

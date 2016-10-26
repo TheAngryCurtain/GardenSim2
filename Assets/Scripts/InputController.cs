@@ -8,9 +8,12 @@ public class InputController : MonoBehaviour
 {
 	public System.Action<float, float> AxisInput;
 	public System.Action<Button> ButtonInput;
+    public System.Action<Vector3> MouseButtonInput;
+    public System.Action<float> MouseScrollInput;
 
 	private float hComponent;
 	private float vComponent;
+    private float mScroll;
 
     void Awake()
     {
@@ -50,7 +53,19 @@ public class InputController : MonoBehaviour
 	{
 		if (Input.GetMouseButtonDown(0))
 		{
-			Debug.Log(Input.mousePosition);
+			if (MouseButtonInput != null)
+            {
+                MouseButtonInput(Input.mousePosition);
+            }
 		}
-	}
+
+        mScroll = Input.GetAxis("MouseScrollWheel");
+        if (mScroll != 0f)
+        {
+            if (MouseScrollInput != null)
+            {
+                MouseScrollInput(mScroll);
+            }
+        }
+    }
 }
