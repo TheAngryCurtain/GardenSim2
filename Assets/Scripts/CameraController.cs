@@ -2,15 +2,15 @@
 using System.Collections;
 using System;
 
-public class CameraController : MonoBehaviour 
+public class CameraController : MonoBehaviour, IControllable
 {	
 	enum ZoomDirection { IN = 0, OUT = 1 };
-	
-	private Vector3 activeZoomPosition;
-	private float maxZoomLevel = 1;
-	private float minZoomLevel = 5;
-	private float currentZoomLevel;
 
+	private float _maxZoomLevel = 1;
+	private float _minZoomLevel = 5;
+
+	private Vector3 _activeZoomPosition;
+	private float _currentZoomLevel;
 	private Transform _leftEdge;
 	private Transform _rightEdge;
 	private Transform _topEdge;
@@ -28,23 +28,19 @@ public class CameraController : MonoBehaviour
 
         transform.position += new Vector3(0f, 25f, 0f);
         transform.Rotate(new Vector3(45f, 0f, 0f));
+
+		_currentZoomLevel = _maxZoomLevel;
+
+		// give camera control
+		GameManager.Instance.InputController.SetControllable(this);
     }
 
-    void Start ()
-	{
-        GameManager.Instance.InputController.AxisInput += HandleDirectionalInput;
-        GameManager.Instance.InputController.MouseButtonInput += HandleMouseInput;
-        GameManager.Instance.InputController.MouseScrollInput += HandleMouseScroll;
-
-        currentZoomLevel = maxZoomLevel;
-	}
-
-    private void HandleMouseInput(Vector3 mousePosition)
+	public void AcceptMouseAction(MouseAction a, Vector3 mousePosition)
     {
-        Debug.Log(mousePosition);
+		Debug.LogFormat("action: {0}, pos: {1}", a, mousePosition);
     }
 
-    private void HandleMouseScroll(float scroll)
+	public void AcceptScrollInput(float scroll)
     {
         if (scroll > 0f)
         {
@@ -56,11 +52,17 @@ public class CameraController : MonoBehaviour
         }
     }
 
+	public void AcceptAxisInput(float h, float v)
+	{
+		float scrollSpeed = 20f;
+		moveCamera(h, v, scrollSpeed);
+	}
+
     // Move the camera based on user input
     public void moveCamera(float translationH, float translationV, float scrollSpeed)
 	{
-		translationH *= Time.deltaTime * scrollSpeed * currentZoomLevel;
-		translationV *= Time.deltaTime * scrollSpeed * currentZoomLevel;
+		translationH *= Time.deltaTime * scrollSpeed * _currentZoomLevel;
+		translationV *= Time.deltaTime * scrollSpeed * _currentZoomLevel;
 		
 		// Move camera
 		transform.Translate(translationH, 0, translationV, Space.World);
@@ -69,7 +71,7 @@ public class CameraController : MonoBehaviour
 		transform.position = new Vector3(Mathf.Clamp(transform.position.x, _leftEdge.position.x, _rightEdge.position.x), transform.position.y, Mathf.Clamp(transform.position.z, _bottomEdge.position.z, _topEdge.position.z));
 
 		// update
-		activeZoomPosition = transform.position;
+		_activeZoomPosition = transform.position;
 	}
 
 	// center the camera on a given position
@@ -85,18 +87,18 @@ public class CameraController : MonoBehaviour
 		switch (direction)
 		{
 		case ZoomDirection.IN:
-			if (currentZoomLevel > maxZoomLevel)
+			if (_currentZoomLevel > _maxZoomLevel)
 			{
-				currentZoomLevel--;
-				activeZoomPosition += transform.forward * 5f;
+				_currentZoomLevel--;
+				_activeZoomPosition += transform.forward * 5f;
 			}
 			break;
 
 		case ZoomDirection.OUT:
-			if (currentZoomLevel < minZoomLevel)
+			if (_currentZoomLevel < _minZoomLevel)
 			{
-				currentZoomLevel++;
-				activeZoomPosition -= transform.forward * 5f;
+				_currentZoomLevel++;
+				_activeZoomPosition -= transform.forward * 5f;
 			}
 			break;
 
@@ -105,13 +107,8 @@ public class CameraController : MonoBehaviour
 			break;
 		}
 
-		transform.position = activeZoomPosition;
+		transform.position = _activeZoomPosition;
 	}
 
-	// handle directional input
-	public void HandleDirectionalInput(float h, float v)
-	{
-		float scrollSpeed = 20f;
-		moveCamera(h, v, scrollSpeed);
-	}
+
 }
