@@ -7,9 +7,6 @@ public class TerrainManager : MonoBehaviour
 {
     public Action OnWorldCreated;
 
-	public enum ObjectID { Grass = 0, Rock, Tree };
-	public GameObject[] ObjectPrefabs;
-
     [SerializeField] private GameObject _terrainPrefab;
     [SerializeField] private GameObject _waterPrefab;
 

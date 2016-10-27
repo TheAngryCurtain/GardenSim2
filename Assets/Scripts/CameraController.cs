@@ -3,13 +3,21 @@ using System.Collections;
 using System;
 
 public class CameraController : MonoBehaviour, IControllable
-{	
+{
+    public Action<Vector3> OnPositionClick;
+
 	enum ZoomDirection { IN = 0, OUT = 1 };
 
-	private float _maxZoomLevel = 1;
-	private float _minZoomLevel = 5;
+    [SerializeField] private Camera _camera;
+    [SerializeField] LayerMask _clickLayers;
 
-	private Vector3 _activeZoomPosition;
+	private int _maxZoomLevel = 1;
+	private int _minZoomLevel = 5;
+    private float _zoomAmount = 5f;
+	private	float _scrollSpeed = 15f;
+    private float _raycastDist = 100f;
+
+    private Vector3 _activeZoomPosition;
 	private float _currentZoomLevel;
 	private Transform _leftEdge;
 	private Transform _rightEdge;
@@ -31,13 +39,16 @@ public class CameraController : MonoBehaviour, IControllable
 
 		_currentZoomLevel = _maxZoomLevel;
 
-		// give camera control
-		GameManager.Instance.InputController.SetControllable(this);
+        GameManager.Instance.InputController.SetControllable(this);
     }
 
 	public void AcceptMouseAction(MouseAction a, Vector3 mousePosition)
     {
-		Debug.LogFormat("action: {0}, pos: {1}", a, mousePosition);
+		//Debug.LogFormat("action: {0}, pos: {1}", a, mousePosition);
+        if (a == MouseAction.LeftClick)
+        {
+            InteractWithWorld(mousePosition);
+        }
     }
 
 	public void AcceptScrollInput(float scroll)
@@ -54,15 +65,32 @@ public class CameraController : MonoBehaviour, IControllable
 
 	public void AcceptAxisInput(float h, float v)
 	{
-		float scrollSpeed = 20f;
-		moveCamera(h, v, scrollSpeed);
+		moveCamera(h, v);
 	}
 
-    // Move the camera based on user input
-    public void moveCamera(float translationH, float translationV, float scrollSpeed)
+    private void InteractWithWorld(Vector3 pos)
+    {
+        Ray r = _camera.ScreenPointToRay(pos);
+        RaycastHit hitInfo;
+        Debug.DrawLine(r.origin, r.origin + r.direction * _raycastDist, Color.red, 10f);
+
+        if (Physics.Raycast(r, out hitInfo, _raycastDist, _clickLayers))
+        {
+            GameObject debug = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            debug.transform.position = hitInfo.point;
+            debug.layer = LayerMask.NameToLayer("TerrainObject");
+
+            if (OnPositionClick != null)
+            {
+                OnPositionClick(hitInfo.point);
+            }
+        }
+    }
+
+    public void moveCamera(float translationH, float translationV)
 	{
-		translationH *= Time.deltaTime * scrollSpeed * _currentZoomLevel;
-		translationV *= Time.deltaTime * scrollSpeed * _currentZoomLevel;
+		translationH *= Time.deltaTime * _scrollSpeed * _currentZoomLevel;
+		translationV *= Time.deltaTime * _scrollSpeed * _currentZoomLevel;
 		
 		// Move camera
 		transform.Translate(translationH, 0, translationV, Space.World);
@@ -75,10 +103,11 @@ public class CameraController : MonoBehaviour, IControllable
 	}
 
 	// center the camera on a given position
-	public void CenterOnPosition(Vector3 position)
+	public void CenterOnObject(Transform obj)
 	{
-		Vector3 newPos = new Vector3(position.x, 7f, position.z - 7f);
-		this.gameObject.transform.position = newPos;
+		// TODO
+        // move camera to obj pos with some offset
+        // zoom all the way in
 	}
 
 	// called from game manager
@@ -90,7 +119,7 @@ public class CameraController : MonoBehaviour, IControllable
 			if (_currentZoomLevel > _maxZoomLevel)
 			{
 				_currentZoomLevel--;
-				_activeZoomPosition += transform.forward * 5f;
+				_activeZoomPosition += transform.forward * _zoomAmount;
 			}
 			break;
 
@@ -98,7 +127,7 @@ public class CameraController : MonoBehaviour, IControllable
 			if (_currentZoomLevel < _minZoomLevel)
 			{
 				_currentZoomLevel++;
-				_activeZoomPosition -= transform.forward * 5f;
+				_activeZoomPosition -= transform.forward * _zoomAmount;
 			}
 			break;
 
@@ -109,6 +138,4 @@ public class CameraController : MonoBehaviour, IControllable
 
 		transform.position = _activeZoomPosition;
 	}
-
-
 }

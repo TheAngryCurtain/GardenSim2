@@ -45,9 +45,8 @@ public class GameManager : MonoBehaviour
 
         CreateManagers();
 
-		//// create tile manager -> creates new tiles and have them subscribe to events
-		////					   -> tiles need to be able to listen to events from tile manager and send events to back to it
-
+        //// create tile manager -> creates new tiles and have them subscribe to events
+        ////					   -> tiles need to be able to listen to events from tile manager and send events to back to it
 	}
 
     private void CreateManagers()

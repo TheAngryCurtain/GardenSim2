@@ -303,7 +303,7 @@ public class WeatherManager : MonoBehaviour
         }
     }
 
-    private void OnTimeChanged(object sender, System.EventArgs args)
+    public void OnTimeChanged(object sender, System.EventArgs args)
     {
         // TODO
         // check the day against the weather schedule to see if the weather should change
@@ -327,9 +327,10 @@ public class WeatherManager : MonoBehaviour
     void OnDestroy()
     {
         GameManager.Instance.TerrainManager.OnWorldCreated -= OnWorldCreated;
+        GameManager.Instance.TimeManager.OnTimeChanged -= OnTimeChanged;
     }
 
-    private void OnWorldCreated()
+    public void OnWorldCreated()
     {
         int worldSeed = GameManager.Instance.TerrainManager.WorldSeed;
         Init(worldSeed);
