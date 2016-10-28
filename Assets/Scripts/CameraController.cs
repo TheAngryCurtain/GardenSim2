@@ -76,7 +76,7 @@ public class CameraController : MonoBehaviour, IControllable
 
         if (Physics.Raycast(r, out hitInfo, _raycastDist, _clickLayers))
         {
-            GameObject debug = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            GameObject debug = GameObject.CreatePrimitive(PrimitiveType.Cube);
             debug.transform.position = hitInfo.point;
             debug.layer = LayerMask.NameToLayer("TerrainObject");
 

@@ -8,6 +8,8 @@ public class GameManager : MonoBehaviour
 	[SerializeField] private Texture2D _cursor;
     [SerializeField] private GameObject[] _managers;
 
+    private Game _currentGame;
+
     // TODO
     // Create all objects that need to be in the scene
     // hook up the events listeners/handlers
@@ -37,16 +39,24 @@ public class GameManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+
+        FileManager.LoadSavedGames();
     }
 
 	void Start()
 	{
+        // load first game for now
+        _currentGame = FileManager.LoadGame(0);
+        Debug.LogFormat("Game -> save slot: {0}, seed: {1}", _currentGame.SaveSlot, _currentGame.WorldSeed);
+
 		Cursor.SetCursor(_cursor, Vector2.zero, CursorMode.ForceSoftware);
 
         CreateManagers();
 
         //// create tile manager -> creates new tiles and have them subscribe to events
         ////					   -> tiles need to be able to listen to events from tile manager and send events to back to it
+
+        TerrainManager.LoadMap(_currentGame.WorldSeed);
 	}
 
     private void CreateManagers()

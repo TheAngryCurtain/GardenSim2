@@ -12,7 +12,7 @@ public class TerrainManager : MonoBehaviour
 
     private Terrain _terrain;
     private int _worldSeed;
-    private float _minDetailHeight = 3f;
+    private float _minDetailHeight = 1f;
     private float _maxDetailHeight = 8f;
 
     public int WorldSeed { get { return _worldSeed; } }
@@ -24,15 +24,14 @@ public class TerrainManager : MonoBehaviour
 
 	// initalize
 	// TODO pass in a save file? or saved terrain height data
-	void Start()
+	public void LoadMap(int seed)
 	{
         GameObject terrainObj = (GameObject)Instantiate(_terrainPrefab, Vector3.zero, Quaternion.identity);
         _terrain = terrainObj.GetComponent<Terrain>();
 
 		TerrainData data = _terrain.terrainData;
 
-        _worldSeed = UnityEngine.Random.Range(0, 100000);
-        Debug.Log(_worldSeed);
+        _worldSeed = seed;
         data = CreateMultiLevelTerrain(_worldSeed, ref data);
 
         Vector3 newPos = new Vector3(-data.heightmapWidth / 2f, 0f, -data.heightmapWidth / 2f);
@@ -112,7 +111,7 @@ public class TerrainManager : MonoBehaviour
 
     private void PlaceDetails(ref TerrainData data, float[][] detailNoise)
     {
-        float detailThreshold = 0.75f;
+        float detailThreshold = 0.5f;
         int numberDetails = data.detailPrototypes.Length;
         int detailSize = data.detailWidth; // should be the same as the heights size
         int[,] detailData;
