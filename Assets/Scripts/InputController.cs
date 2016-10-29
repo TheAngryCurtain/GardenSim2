@@ -9,6 +9,14 @@ public enum MouseAction
 	RightClick
 }
 
+public enum ControllableType
+{
+	Axis,
+	Scroll,
+	Key,
+	Click
+};
+
 public class InputController : MonoBehaviour
 {
 	private IControllable _control = null;
@@ -18,23 +26,29 @@ public class InputController : MonoBehaviour
 	private float _scroll;
 	private Vector3 _mousePos;
 
+	private IControllable[] _previousControllables;
+	private IControllable[] _currentControllables;
+
     void Awake()
     {
         GameManager.Instance.InputController = this;
+
+		_previousControllables = new IControllable[4]; // length of enum
+		_currentControllables = new IControllable[4];
     }
 
 	void Update()
 	{
-		if (_control != null)
-		{
-			GetAxisInput();
-			GetMouseInput();
-		}
+		GetAxisInput();
+		GetMouseInput();
+		GetKeyInput();
 	}
 
-	public void SetControllable (IControllable c)
+	public void SetControllable (IControllable c, ControllableType type)
 	{
-		_control = c;
+		int typeIndex = (int)type;
+		_previousControllables[typeIndex] = _currentControllables[typeIndex];
+		_currentControllables[typeIndex] = c;
 	}
 
 	private void GetAxisInput()
@@ -42,28 +56,47 @@ public class InputController : MonoBehaviour
 		_h = Input.GetAxis("Horizontal");
 		_v = Input.GetAxis("Vertical");
 
-		_control.AcceptAxisInput(_h, _v);
+		if (_currentControllables[(int)ControllableType.Axis] != null)
+		{
+			_currentControllables[(int)ControllableType.Axis].AcceptAxisInput(_h, _v);
+		}
+	}
+
+	private void GetKeyInput()
+	{
+		if (_currentControllables[(int)ControllableType.Key] != null)
+		{
+			_currentControllables[(int)ControllableType.Key].AcceptKeyInput(KeyCode.LeftShift, Input.GetKeyDown(KeyCode.LeftShift));
+		}
 	}
 
 	private void GetMouseInput()
 	{
         if (!EventSystem.current.IsPointerOverGameObject(-1))
         {
-            _mousePos = Input.mousePosition;
-            if (Input.GetMouseButtonDown((int)MouseAction.LeftClick))
-            {
-                _control.AcceptMouseAction(MouseAction.LeftClick, _mousePos);
-            }
-            else if (Input.GetMouseButton((int)MouseAction.RightClick))
-            {
-                _control.AcceptMouseAction(MouseAction.RightClick, _mousePos);
-            }
+			// click
+			if (_currentControllables[(int)ControllableType.Click] != null)
+			{
+	            _mousePos = Input.mousePosition;
+	            if (Input.GetMouseButtonDown((int)MouseAction.LeftClick))
+	            {
+					_currentControllables[(int)ControllableType.Click].AcceptMouseAction(MouseAction.LeftClick, _mousePos);
+	            }
+	            else if (Input.GetMouseButton((int)MouseAction.RightClick))
+	            {
+					_currentControllables[(int)ControllableType.Click].AcceptMouseAction(MouseAction.RightClick, _mousePos);
+	            }
+			}
 
-            _scroll = Input.GetAxis("MouseScrollWheel");
-            if (_scroll != 0f)
-            {
-                _control.AcceptScrollInput(_scroll);
-            }
+			// scroll
+			if (_currentControllables[(int)ControllableType.Scroll] != null)
+			{
+	            _scroll = Input.GetAxis("MouseScrollWheel");
+	            if (_scroll != 0f)
+	            {
+					_currentControllables[(int)ControllableType.Scroll].AcceptScrollInput(_scroll);
+	            }
+			}
         }
     }
 }

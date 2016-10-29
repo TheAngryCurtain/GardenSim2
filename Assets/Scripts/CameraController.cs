@@ -41,7 +41,9 @@ public class CameraController : MonoBehaviour, IControllable
 
 		_currentZoomLevel = _maxZoomLevel;
 
-        GameManager.Instance.InputController.SetControllable(this);
+		// take required controls
+		GameManager.Instance.InputController.SetControllable(this, ControllableType.Axis);
+		GameManager.Instance.InputController.SetControllable(this, ControllableType.Click);
     }
 
 	public void AcceptMouseAction(MouseAction a, Vector3 mousePosition)
@@ -68,6 +70,11 @@ public class CameraController : MonoBehaviour, IControllable
 	public void AcceptAxisInput(float h, float v)
 	{
 		moveCamera(h, v);
+	}
+
+	public void AcceptKeyInput(KeyCode k, bool value)
+	{
+
 	}
 
     private void InteractWithWorld(Vector3 pos)
