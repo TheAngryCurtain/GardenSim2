@@ -22,9 +22,14 @@ public class TerrainManager : MonoBehaviour
         GameManager.Instance.TerrainManager = this;
     }
 
-	// initalize
-	// TODO pass in a save file? or saved terrain height data
-	public void LoadMap(int seed)
+    void Start()
+    {
+        GameManager.Instance.CameraController.OnPositionClick += OnTerrainClick;
+    }
+
+    // initalize
+    // TODO pass in a save file? or saved terrain height data
+    public void LoadMap(int seed)
 	{
         GameObject terrainObj = (GameObject)Instantiate(_terrainPrefab, Vector3.zero, Quaternion.identity);
         _terrain = terrainObj.GetComponent<Terrain>();
@@ -205,9 +210,68 @@ public class TerrainManager : MonoBehaviour
 		data.SetAlphamaps(0, 0, splatmapData);
 	}
 
-	#region helper functions
-	// convert jagged array to 2d array
-	private float[,] ConvertTo2D(float[][] jagged)
+    private void OnTerrainClick(int layer, Vector3 terrainPos)
+    {
+        if (layer == LayerMask.NameToLayer("Terrain"))
+        {
+            Vector3 objPos = SnapToGrid(terrainPos);
+            GameObject debug = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            debug.transform.position = objPos;
+            debug.layer = LayerMask.NameToLayer("TerrainObject");
+
+            Vector3 terrainLocal = GetTerrainRelativePosition(objPos);
+            ModifyHeightsAtPos(terrainLocal, -0.1f);
+        }
+    }
+
+    private Vector3 SnapToGrid(Vector3 pos, float factor = 1f)
+    {
+        if (factor <= 0f)
+        {
+            Debug.Log("Factor must be greater than 0");
+            return Vector3.zero;
+        }
+
+        float x = Mathf.Round(pos.x / factor) * factor;
+        float z = Mathf.Round(pos.z / factor) * factor;
+
+        return new Vector3(x, pos.y, z);
+    }
+
+    private Vector3 GetTerrainRelativePosition(Vector3 worldPos)
+    {
+        float terrainSize = (float)_terrain.terrainData.alphamapWidth;
+        int heightMapRes = _terrain.terrainData.heightmapResolution;
+
+        Vector3 terrainLocalPos = worldPos - _terrain.transform.position;
+        terrainLocalPos.x = Mathf.Round((terrainLocalPos.x / terrainSize) * heightMapRes);
+        terrainLocalPos.z = Mathf.Round((terrainLocalPos.z / terrainSize) * heightMapRes);
+
+        return terrainLocalPos;
+    }
+
+    private void ModifyHeightsAtPos(Vector3 localPos, float heightOffset)
+    {
+        int size = 2;
+        int offset = size / 2;
+        int localX = (int)localPos.x - offset;
+        int localZ = (int)localPos.z - offset;
+
+        float[,] heights = _terrain.terrainData.GetHeights(localX, localZ, size, size);
+        for (int i = 0; i < size; ++i)
+        {
+            for (int j = 0; j < size; ++j)
+            {
+                heights[i, j] = heights[i, j] + heightOffset;
+            }
+        }
+
+        _terrain.terrainData.SetHeights(localX, localZ, heights);
+    }
+
+    #region helper functions
+    // convert jagged array to 2d array
+    private float[,] ConvertTo2D(float[][] jagged)
 	{
 		float[,] _2d = new float[jagged.Length, jagged[0].Length];
 

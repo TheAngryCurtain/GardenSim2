@@ -4,13 +4,15 @@ using System;
 
 public class CameraController : MonoBehaviour, IControllable
 {
-    public Action<Vector3> OnPositionClick;
+    public Action<int, Vector3> OnPositionClick;
 
 	enum ZoomDirection { IN = 0, OUT = 1 };
 
     [SerializeField] private Camera _camera;
     [SerializeField] LayerMask _clickLayers;
 
+    private float _startHeight = 15f;
+    private float _angle = 45f;
 	private int _maxZoomLevel = 1;
 	private int _minZoomLevel = 5;
     private float _zoomAmount = 5f;
@@ -34,8 +36,8 @@ public class CameraController : MonoBehaviour, IControllable
         _topEdge = CameraBoundaries.GetChild(2);
         _bottomEdge = CameraBoundaries.GetChild(3);
 
-        transform.position += new Vector3(0f, 25f, 0f);
-        transform.Rotate(new Vector3(45f, 0f, 0f));
+        transform.position += new Vector3(0f, _startHeight, 0f);
+        transform.Rotate(new Vector3(_angle, 0f, 0f));
 
 		_currentZoomLevel = _maxZoomLevel;
 
@@ -76,13 +78,10 @@ public class CameraController : MonoBehaviour, IControllable
 
         if (Physics.Raycast(r, out hitInfo, _raycastDist, _clickLayers))
         {
-            GameObject debug = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            debug.transform.position = hitInfo.point;
-            debug.layer = LayerMask.NameToLayer("TerrainObject");
-
+            int layer = hitInfo.collider.gameObject.layer;
             if (OnPositionClick != null)
             {
-                OnPositionClick(hitInfo.point);
+                OnPositionClick(layer, hitInfo.point);
             }
         }
     }
