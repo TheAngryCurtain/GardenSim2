@@ -14,8 +14,13 @@ public class TerrainManager : MonoBehaviour
     private int _worldSeed;
     private float _minDetailHeight = 1f;
     private float _maxDetailHeight = 8f;
+    private bool _interactMode = false;
+    private float _customHeight;
+    private bool _customHeightSet = false;
+    private GameObject _customHeightMarker = null;
 
     public int WorldSeed { get { return _worldSeed; } }
+    public bool InteractMode { get { return _interactMode; } }
 
     void Awake()
     {
@@ -25,6 +30,19 @@ public class TerrainManager : MonoBehaviour
     void Start()
     {
         GameManager.Instance.CameraController.OnPositionClick += OnTerrainClick;
+    }
+
+    // called from UIController on button click
+    public bool ToggleInteractMode()
+    {
+        _interactMode = !_interactMode;
+
+        if (_customHeightMarker != null)
+        {
+            _customHeightMarker.SetActive(_interactMode);
+        }
+
+        return _interactMode;
     }
 
     // initalize
@@ -215,12 +233,41 @@ public class TerrainManager : MonoBehaviour
         if (layer == LayerMask.NameToLayer("Terrain"))
         {
             Vector3 objPos = SnapToGrid(terrainPos);
-            GameObject debug = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            debug.transform.position = objPos;
-            debug.layer = LayerMask.NameToLayer("TerrainObject");
+            if (_interactMode)
+            {
+                Vector3 terrainLocal = GetTerrainRelativePosition(objPos);
+                if (_customHeightSet)
+                {
+                    if (_customHeightMarker == null)
+                    {
+                        _customHeightMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                        _customHeightMarker.layer = LayerMask.NameToLayer("TerrainObject");
+                    }
+                    _customHeightMarker.transform.position = objPos;
 
-            Vector3 terrainLocal = GetTerrainRelativePosition(objPos);
-            ModifyHeightsAtPos(terrainLocal, -0.1f);
+                    // this doesn't seem right...
+                    _customHeight = _terrain.terrainData.GetHeight((int)terrainLocal.x, (int)terrainLocal.z) / 10f;
+                    Debug.Log(_customHeight);
+                }
+                else
+                {
+                    ModifyHeightsAtPos(terrainLocal, _customHeight);
+                }
+            }
+            else
+            {
+                GameObject debug = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                debug.transform.position = objPos;
+                debug.layer = LayerMask.NameToLayer("TerrainObject");
+            }
+        }
+    }
+
+    void Update()
+    {
+        if (_interactMode)
+        {
+            _customHeightSet = Input.GetKey(KeyCode.LeftShift);
         }
     }
 
@@ -250,7 +297,7 @@ public class TerrainManager : MonoBehaviour
         return terrainLocalPos;
     }
 
-    private void ModifyHeightsAtPos(Vector3 localPos, float heightOffset)
+    private void ModifyHeightsAtPos(Vector3 localPos, float height)
     {
         int size = 2;
         int offset = size / 2;
@@ -262,7 +309,9 @@ public class TerrainManager : MonoBehaviour
         {
             for (int j = 0; j < size; ++j)
             {
-                heights[i, j] = heights[i, j] + heightOffset;
+                Debug.Log(heights[i, j]);
+
+                heights[i, j] = height;
             }
         }
 
@@ -285,5 +334,5 @@ public class TerrainManager : MonoBehaviour
 
 		return _2d;
 	}
-	#endregion
+    #endregion
 }

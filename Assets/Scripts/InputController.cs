@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using UnityEngine.EventSystems;
 
 public enum MouseAction
 {
@@ -46,20 +47,23 @@ public class InputController : MonoBehaviour
 
 	private void GetMouseInput()
 	{
-		_mousePos = Input.mousePosition;
-		if (Input.GetMouseButtonDown((int)MouseAction.LeftClick))
-		{
-			_control.AcceptMouseAction(MouseAction.LeftClick, _mousePos);
-		}
-		else if (Input.GetMouseButton((int)MouseAction.RightClick))
-		{
-			_control.AcceptMouseAction(MouseAction.RightClick, _mousePos);
-		}
-
-        _scroll = Input.GetAxis("MouseScrollWheel");
-        if (_scroll != 0f)
+        if (!EventSystem.current.IsPointerOverGameObject(-1))
         {
-			_control.AcceptScrollInput(_scroll);
+            _mousePos = Input.mousePosition;
+            if (Input.GetMouseButtonDown((int)MouseAction.LeftClick))
+            {
+                _control.AcceptMouseAction(MouseAction.LeftClick, _mousePos);
+            }
+            else if (Input.GetMouseButton((int)MouseAction.RightClick))
+            {
+                _control.AcceptMouseAction(MouseAction.RightClick, _mousePos);
+            }
+
+            _scroll = Input.GetAxis("MouseScrollWheel");
+            if (_scroll != 0f)
+            {
+                _control.AcceptScrollInput(_scroll);
+            }
         }
     }
 }
