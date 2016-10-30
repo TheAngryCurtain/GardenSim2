@@ -43,6 +43,7 @@ public class CameraController : MonoBehaviour, IControllable
 
 		// take required controls
 		GameManager.Instance.InputController.SetControllable(this, ControllableType.Axis);
+        GameManager.Instance.InputController.SetControllable(this, ControllableType.Scroll);
 		GameManager.Instance.InputController.SetControllable(this, ControllableType.Click);
     }
 
@@ -77,20 +78,38 @@ public class CameraController : MonoBehaviour, IControllable
 
 	}
 
+    public void AcceptMousePosition(Vector3 pos)
+    {
+
+    }
+
     private void InteractWithWorld(Vector3 pos)
+    {
+        int layer;
+        Vector3 worldPos = GetWorldPosFromScreen(pos, out layer);
+        if (OnPositionClick != null && layer != -1)
+        {
+            OnPositionClick(layer, worldPos);
+        }
+        else
+        {
+            Debug.LogWarning("No valid listener or invalid layer");
+        }
+    }
+
+    public Vector3 GetWorldPosFromScreen(Vector3 pos, out int layer)
     {
         Ray r = _camera.ScreenPointToRay(pos);
         RaycastHit hitInfo;
-        Debug.DrawLine(r.origin, r.origin + r.direction * _raycastDist, Color.red, 10f);
 
         if (Physics.Raycast(r, out hitInfo, _raycastDist, _clickLayers))
         {
-            int layer = hitInfo.collider.gameObject.layer;
-            if (OnPositionClick != null)
-            {
-                OnPositionClick(layer, hitInfo.point);
-            }
+            layer = hitInfo.collider.gameObject.layer;
+            return hitInfo.point;
         }
+
+        layer = -1;
+        return Vector3.zero;
     }
 
     public void moveCamera(float translationH, float translationV)

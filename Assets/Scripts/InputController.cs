@@ -14,13 +14,12 @@ public enum ControllableType
 	Axis,
 	Scroll,
 	Key,
-	Click
+	Click,
+    Position
 };
 
 public class InputController : MonoBehaviour
 {
-	private IControllable _control = null;
-
 	private float _h;
 	private float _v;
 	private float _scroll;
@@ -33,8 +32,8 @@ public class InputController : MonoBehaviour
     {
         GameManager.Instance.InputController = this;
 
-		_previousControllables = new IControllable[4]; // length of enum
-		_currentControllables = new IControllable[4];
+		_previousControllables = new IControllable[5]; // length of enum
+		_currentControllables = new IControllable[5];
     }
 
 	void Update()
@@ -66,7 +65,7 @@ public class InputController : MonoBehaviour
 	{
 		if (_currentControllables[(int)ControllableType.Key] != null)
 		{
-			_currentControllables[(int)ControllableType.Key].AcceptKeyInput(KeyCode.LeftShift, Input.GetKeyDown(KeyCode.LeftShift));
+			_currentControllables[(int)ControllableType.Key].AcceptKeyInput(KeyCode.LeftShift, Input.GetKey(KeyCode.LeftShift));
 		}
 	}
 
@@ -97,6 +96,12 @@ public class InputController : MonoBehaviour
 					_currentControllables[(int)ControllableType.Scroll].AcceptScrollInput(_scroll);
 	            }
 			}
+
+            // position
+            if (_currentControllables[(int)ControllableType.Position] != null)
+            {
+                _currentControllables[(int)ControllableType.Position].AcceptMousePosition(Input.mousePosition);
+            }
         }
     }
 }

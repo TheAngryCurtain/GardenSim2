@@ -3,12 +3,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-public class TerrainManager : MonoBehaviour
+public class TerrainManager : MonoBehaviour, IControllable
 {
     public Action OnWorldCreated;
 
     [SerializeField] private GameObject _terrainPrefab;
     [SerializeField] private GameObject _waterPrefab;
+    [SerializeField] private GameObject _heightMarkerPrefab;
+    [SerializeField] private GameObject _heightDraggerPrefab;
 
     private Terrain _terrain;
     private int _worldSeed;
@@ -18,6 +20,9 @@ public class TerrainManager : MonoBehaviour
     private float _customHeight;
     private bool _customHeightSet = false;
     private GameObject _customHeightMarker = null;
+    private Vector3 _firstPoint;
+    private bool _firstPointSet = false;
+    private GameObject _heightDragger = null;
 
     public int WorldSeed { get { return _worldSeed; } }
     public bool InteractMode { get { return _interactMode; } }
@@ -37,9 +42,26 @@ public class TerrainManager : MonoBehaviour
     {
         _interactMode = !_interactMode;
 
-        if (_customHeightMarker != null)
+        if (_interactMode)
         {
-            _customHeightMarker.SetActive(_interactMode);
+            if (_customHeightMarker == null)
+            {
+                _customHeightMarker = (GameObject)Instantiate(_heightMarkerPrefab);
+                _customHeightMarker.SetActive(false);
+            }
+
+            if (_heightDragger == null)
+            {
+                _heightDragger = (GameObject)Instantiate(_heightDraggerPrefab);
+                _heightDragger.SetActive(false);
+            }
+
+            GameManager.Instance.InputController.SetControllable(this, ControllableType.Key);
+        }
+        else
+        {
+            GameManager.Instance.InputController.SetControllable(null, ControllableType.Key);
+            _customHeightMarker.SetActive(false);
         }
 
         return _interactMode;
@@ -68,6 +90,7 @@ public class TerrainManager : MonoBehaviour
         }
 	}
 
+    #region Terrain Generation
     // create and merge some noise to create interesting terrain height map
     private TerrainData CreateMultiLevelTerrain(int seed, ref TerrainData data)
     {
@@ -227,6 +250,7 @@ public class TerrainManager : MonoBehaviour
 		// apply the new alpha
 		data.SetAlphamaps(0, 0, splatmapData);
 	}
+    #endregion
 
     private void OnTerrainClick(int layer, Vector3 terrainPos)
     {
@@ -235,23 +259,52 @@ public class TerrainManager : MonoBehaviour
             Vector3 objPos = SnapToGrid(terrainPos);
             if (_interactMode)
             {
-                Vector3 terrainLocal = GetTerrainRelativePosition(objPos);
                 if (_customHeightSet)
                 {
-                    if (_customHeightMarker == null)
-                    {
-                        _customHeightMarker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                        _customHeightMarker.layer = LayerMask.NameToLayer("TerrainObject");
-                    }
                     _customHeightMarker.transform.position = objPos;
+                    _customHeightMarker.SetActive(true);
 
                     // this doesn't seem right...
+                    Vector3 terrainLocal = GetTerrainRelativePosition(objPos);
                     _customHeight = _terrain.terrainData.GetHeight((int)terrainLocal.x, (int)terrainLocal.z) / 10f;
-                    Debug.Log(_customHeight);
+                    //Debug.Log(_customHeight);
                 }
-                else
+                else if (_customHeightMarker.activeInHierarchy)
                 {
-                    ModifyHeightsAtPos(terrainLocal, _customHeight);
+                    if (!_firstPointSet)
+                    {
+                        _firstPointSet = true;
+                        _firstPoint = objPos;
+                        _heightDragger.transform.position = _firstPoint;
+                        _heightDragger.SetActive(true);
+
+                        GameManager.Instance.InputController.SetControllable(this, ControllableType.Position);
+                    }
+                    else
+                    {
+                        GameManager.Instance.InputController.SetControllable(null, ControllableType.Position);
+                        int sizeX = (int)(_heightDragger.transform.localScale.x);
+                        int sizeZ = (int)(_heightDragger.transform.localScale.z);
+
+                        // for indexing the terrain correctly with negative scales, just move the point back by the scale amount
+                        // and make the scale positive
+                        Vector3 modifiedFirstPoint = _firstPoint;
+                        if (sizeZ > 0)
+                        {
+                            modifiedFirstPoint.z -= sizeZ;
+                        }
+
+                        if (sizeX < 0)
+                        {
+                            modifiedFirstPoint.x += sizeX;
+                        }
+
+                        ModifyHeightsAtPos(GetTerrainRelativePosition(modifiedFirstPoint), Mathf.Abs(sizeX), Mathf.Abs(sizeZ), _customHeight);
+
+                        _firstPointSet = false;
+                        _heightDragger.transform.localScale = Vector3.one;
+                        _heightDragger.SetActive(false);
+                    }
                 }
             }
             else
@@ -260,14 +313,6 @@ public class TerrainManager : MonoBehaviour
                 debug.transform.position = objPos;
                 debug.layer = LayerMask.NameToLayer("TerrainObject");
             }
-        }
-    }
-
-    void Update()
-    {
-        if (_interactMode)
-        {
-            _customHeightSet = Input.GetKey(KeyCode.LeftShift);
         }
     }
 
@@ -297,25 +342,58 @@ public class TerrainManager : MonoBehaviour
         return terrainLocalPos;
     }
 
-    private void ModifyHeightsAtPos(Vector3 localPos, float height)
+    private void ModifyHeightsAtPos(Vector3 localPos, int sizeX, int sizeZ, float height)
     {
-        int size = 2;
-        int offset = size / 2;
-        int localX = (int)localPos.x - offset;
-        int localZ = (int)localPos.z - offset;
-
-        float[,] heights = _terrain.terrainData.GetHeights(localX, localZ, size, size);
-        for (int i = 0; i < size; ++i)
+        float[,] heights = _terrain.terrainData.GetHeights((int)localPos.x, (int)localPos.z, sizeX, sizeZ);
+        for (int i = 0; i < sizeZ; ++i)
         {
-            for (int j = 0; j < size; ++j)
+            for (int j = 0; j < sizeX; ++j)
             {
-                Debug.Log(heights[i, j]);
+                //Debug.Log(heights[i, j]);
 
                 heights[i, j] = height;
             }
         }
 
-        _terrain.terrainData.SetHeights(localX, localZ, heights);
+        _terrain.terrainData.SetHeights((int)localPos.x, (int)localPos.z, heights);
+    }
+
+    public void AcceptAxisInput(float h, float v)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void AcceptMouseAction(MouseAction a, Vector3 pos)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void AcceptScrollInput(float f)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void AcceptKeyInput(KeyCode k, bool value)
+    {
+        if (k == KeyCode.LeftShift)
+        {
+            _customHeightSet = value;
+        }
+    }
+
+    public void AcceptMousePosition(Vector3 pos)
+    {
+        int unusedLayer;
+        Vector3 worldPos = GameManager.Instance.CameraController.GetWorldPosFromScreen(pos, out unusedLayer);
+        worldPos.y = _firstPoint.y;
+
+        Vector3 snappedPos = SnapToGrid(worldPos);
+        Vector3 firstToMouse = snappedPos - _firstPoint;
+        Vector3 newScale = _heightDragger.transform.localScale;
+
+        newScale.x = firstToMouse.x;
+        newScale.z = firstToMouse.z * -1;
+        _heightDragger.transform.localScale = newScale;
     }
 
     #region helper functions
