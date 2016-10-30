@@ -8,6 +8,10 @@ public class UIController : MonoBehaviour
     
     [SerializeField] Text _flattenButtonText;
 
+    [SerializeField] Button _undoButton;
+
+    private bool _isModifying = false;
+
     void Awake()
     {
         Instance = this;
@@ -18,14 +22,25 @@ public class UIController : MonoBehaviour
         switch (id)
         {
             case 0: // flatten terrain
-                bool state = GameManager.Instance.TerrainManager.ToggleInteractMode();
-                SetFlattenText(state);
+                _isModifying = GameManager.Instance.TerrainManager.ToggleInteractMode();
+                SetFlattenText(_isModifying);
+                break;
+
+            case 1: // undo terrain modify
+                GameManager.Instance.TerrainManager.UndoLastModify();
                 break;
         }
+
+        _undoButton.gameObject.SetActive(_isModifying);
     }
 
     private void SetFlattenText(bool state)
     {
         _flattenButtonText.text = (state ? "Select" : "Flatten");
+    }
+
+    public void OnTerrainModified(int index)
+    {
+        _undoButton.interactable = (index > 0);
     }
 }

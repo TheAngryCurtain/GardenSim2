@@ -6,11 +6,30 @@ using System.Collections.Generic;
 public class TerrainManager : MonoBehaviour, IControllable
 {
     public Action OnWorldCreated;
+    public Action<int> OnTerrainModified;
+
+    private struct TerrainModificationAction
+    {
+        public float[,] OriginalHeights;
+        public Vector3 referencePoint;
+        public int scaleX;
+        public int scaleZ;
+
+        public TerrainModificationAction(Vector3 refPoint, int sizeX, int sizeZ)
+        {
+            OriginalHeights = new float[sizeZ, sizeX];
+            referencePoint = refPoint;
+            scaleX = sizeX;
+            scaleZ = sizeZ;
+        }
+    }
 
     [SerializeField] private GameObject _terrainPrefab;
     [SerializeField] private GameObject _waterPrefab;
     [SerializeField] private GameObject _heightMarkerPrefab;
     [SerializeField] private GameObject _heightDraggerPrefab;
+
+    private List<TerrainModificationAction> _terrainActions;
 
     private Terrain _terrain;
     private int _worldSeed;
@@ -23,6 +42,7 @@ public class TerrainManager : MonoBehaviour, IControllable
     private Vector3 _firstPoint;
     private bool _firstPointSet = false;
     private GameObject _heightDragger = null;
+    private int _undoIndex = 0;
 
     public int WorldSeed { get { return _worldSeed; } }
     public bool InteractMode { get { return _interactMode; } }
@@ -35,9 +55,12 @@ public class TerrainManager : MonoBehaviour, IControllable
     void Start()
     {
         GameManager.Instance.CameraController.OnPositionClick += OnTerrainClick;
+        OnTerrainModified += UIController.Instance.OnTerrainModified;
+
+        _terrainActions = new List<TerrainModificationAction>();
     }
 
-    // called from UIController on button click
+    #region UIController button click calls
     public bool ToggleInteractMode()
     {
         _interactMode = !_interactMode;
@@ -67,8 +90,20 @@ public class TerrainManager : MonoBehaviour, IControllable
         return _interactMode;
     }
 
+    public void UndoLastModify()
+    {
+        int count = _terrainActions.Count;
+        if (count > 0)
+        {
+            TerrainModificationAction lastAction = _terrainActions[_undoIndex - 1];
+            _undoIndex -= 1;
+            ModifyHeightsFromAction(lastAction);
+            _terrainActions.Remove(lastAction);
+        }
+    }
+    #endregion
+
     // initalize
-    // TODO pass in a save file? or saved terrain height data
     public void LoadMap(int seed)
 	{
         GameObject terrainObj = (GameObject)Instantiate(_terrainPrefab, Vector3.zero, Quaternion.identity);
@@ -264,9 +299,8 @@ public class TerrainManager : MonoBehaviour, IControllable
                     _customHeightMarker.transform.position = objPos;
                     _customHeightMarker.SetActive(true);
 
-                    // this doesn't seem right...
                     Vector3 terrainLocal = GetTerrainRelativePosition(objPos);
-                    _customHeight = _terrain.terrainData.GetHeight((int)terrainLocal.x, (int)terrainLocal.z) / 10f;
+                    _customHeight = _terrain.terrainData.GetHeight((int)terrainLocal.x, (int)terrainLocal.z) / 10f; // height of terrain
                     //Debug.Log(_customHeight);
                 }
                 else if (_customHeightMarker.activeInHierarchy)
@@ -342,20 +376,49 @@ public class TerrainManager : MonoBehaviour, IControllable
         return terrainLocalPos;
     }
 
+    private void ModifyHeightsFromAction(TerrainModificationAction action)
+    {
+        int x = (int)action.referencePoint.x;
+        int z = (int)action.referencePoint.z;
+        float[,] existingHeights = _terrain.terrainData.GetHeights(x, z, action.scaleX, action.scaleZ);
+
+        for (int i = 0; i < action.scaleZ; ++i)
+        {
+            for (int j = 0; j < action.scaleX; ++j)
+            {
+                existingHeights[i, j] = action.OriginalHeights[i, j];
+            }
+        }
+
+        _terrain.terrainData.SetHeights(x, z, existingHeights);
+
+        if (OnTerrainModified != null)
+        {
+            OnTerrainModified(_undoIndex);
+        }
+    }
+
     private void ModifyHeightsAtPos(Vector3 localPos, int sizeX, int sizeZ, float height)
     {
+        TerrainModificationAction action = new TerrainModificationAction(localPos, sizeX, sizeZ);
         float[,] heights = _terrain.terrainData.GetHeights((int)localPos.x, (int)localPos.z, sizeX, sizeZ);
         for (int i = 0; i < sizeZ; ++i)
         {
             for (int j = 0; j < sizeX; ++j)
             {
-                //Debug.Log(heights[i, j]);
-
+                action.OriginalHeights[i, j] = heights[i, j];
                 heights[i, j] = height;
             }
         }
 
+        _terrainActions.Add(action);
+        _undoIndex += 1;
         _terrain.terrainData.SetHeights((int)localPos.x, (int)localPos.z, heights);
+
+        if (OnTerrainModified != null)
+        {
+            OnTerrainModified(_undoIndex);
+        }
     }
 
     public void AcceptAxisInput(float h, float v)
