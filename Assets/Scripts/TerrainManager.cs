@@ -343,9 +343,7 @@ public class TerrainManager : MonoBehaviour, IControllable
             }
             else
             {
-                GameObject debug = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                debug.transform.position = objPos;
-                debug.layer = LayerMask.NameToLayer("TerrainObject");
+                Debug.Log("> Terrain Click");
             }
         }
     }
