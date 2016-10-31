@@ -39,8 +39,9 @@ public class UIController : MonoBehaviour
         _flattenButtonText.text = (state ? "Select" : "Flatten");
     }
 
-    public void OnTerrainModified(int index)
+    public void OnTerrainModified(object sender, System.EventArgs e)
     {
-        _undoButton.interactable = (index > 0);
+        TerrainModArgs args = (TerrainModArgs)e;
+        _undoButton.interactable = (args.UndoIndex > 0);
     }
 }

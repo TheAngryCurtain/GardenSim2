@@ -6,7 +6,7 @@ using System.Collections.Generic;
 public class TerrainManager : MonoBehaviour, IControllable
 {
     public Action OnWorldCreated;
-    public Action<int> OnTerrainModified;
+    public event EventHandler OnTerrainModified;
 
     private struct TerrainModificationAction
     {
@@ -46,6 +46,7 @@ public class TerrainManager : MonoBehaviour, IControllable
 
     public int WorldSeed { get { return _worldSeed; } }
     public bool InteractMode { get { return _interactMode; } }
+    public int MapSize { get { return _terrain.terrainData.alphamapWidth; } }
 
     void Awake()
     {
@@ -56,6 +57,7 @@ public class TerrainManager : MonoBehaviour, IControllable
     {
         GameManager.Instance.CameraController.OnPositionClick += OnTerrainClick;
         OnTerrainModified += UIController.Instance.OnTerrainModified;
+        OnTerrainModified += GameManager.Instance.TileManager.OnTerrainModified;
 
         _terrainActions = new List<TerrainModificationAction>();
     }
@@ -301,7 +303,6 @@ public class TerrainManager : MonoBehaviour, IControllable
 
                     Vector3 terrainLocal = GetTerrainRelativePosition(objPos);
                     _customHeight = _terrain.terrainData.GetHeight((int)terrainLocal.x, (int)terrainLocal.z) / 10f; // height of terrain
-                    //Debug.Log(_customHeight);
                 }
                 else if (_customHeightMarker.activeInHierarchy)
                 {
@@ -317,8 +318,8 @@ public class TerrainManager : MonoBehaviour, IControllable
                     else
                     {
                         GameManager.Instance.InputController.SetControllable(null, ControllableType.Position);
-                        int sizeX = (int)(_heightDragger.transform.localScale.x);
-                        int sizeZ = (int)(_heightDragger.transform.localScale.z);
+                        int sizeX = Mathf.RoundToInt(_heightDragger.transform.localScale.x);
+                        int sizeZ = Mathf.RoundToInt(_heightDragger.transform.localScale.z);
 
                         // for indexing the terrain correctly with negative scales, just move the point back by the scale amount
                         // and make the scale positive
@@ -333,7 +334,7 @@ public class TerrainManager : MonoBehaviour, IControllable
                             modifiedFirstPoint.x += sizeX;
                         }
 
-                        ModifyHeightsAtPos(GetTerrainRelativePosition(modifiedFirstPoint), Mathf.Abs(sizeX), Mathf.Abs(sizeZ), _customHeight);
+                        ModifyHeightsAtPos(modifiedFirstPoint, Mathf.Abs(sizeX), Mathf.Abs(sizeZ), _customHeight);
 
                         _firstPointSet = false;
                         _heightDragger.transform.localScale = Vector3.one;
@@ -358,8 +359,9 @@ public class TerrainManager : MonoBehaviour, IControllable
 
         float x = Mathf.Round(pos.x / factor) * factor;
         float z = Mathf.Round(pos.z / factor) * factor;
+        Vector3 testPoint = new Vector3(x, 0f, z);
 
-        return new Vector3(x, pos.y, z);
+        return new Vector3(x, _terrain.SampleHeight(testPoint), z);
     }
 
     private Vector3 GetTerrainRelativePosition(Vector3 worldPos)
@@ -368,16 +370,16 @@ public class TerrainManager : MonoBehaviour, IControllable
         int heightMapRes = _terrain.terrainData.heightmapResolution;
 
         Vector3 terrainLocalPos = worldPos - _terrain.transform.position;
-        terrainLocalPos.x = Mathf.Round((terrainLocalPos.x / terrainSize) * heightMapRes);
-        terrainLocalPos.z = Mathf.Round((terrainLocalPos.z / terrainSize) * heightMapRes);
+        terrainLocalPos.x = Mathf.RoundToInt((terrainLocalPos.x / terrainSize) * heightMapRes);
+        terrainLocalPos.z = Mathf.RoundToInt((terrainLocalPos.z / terrainSize) * heightMapRes);
 
         return terrainLocalPos;
     }
 
     private void ModifyHeightsFromAction(TerrainModificationAction action)
     {
-        int x = (int)action.referencePoint.x;
-        int z = (int)action.referencePoint.z;
+        int x = Mathf.RoundToInt(action.referencePoint.x);
+        int z = Mathf.RoundToInt(action.referencePoint.z);
         float[,] existingHeights = _terrain.terrainData.GetHeights(x, z, action.scaleX, action.scaleZ);
 
         for (int i = 0; i < action.scaleZ; ++i)
@@ -392,14 +394,24 @@ public class TerrainManager : MonoBehaviour, IControllable
 
         if (OnTerrainModified != null)
         {
-            OnTerrainModified(_undoIndex);
+            TerrainModArgs args = new TerrainModArgs();
+            args.UndoIndex = _undoIndex;
+            args.WasUndo = true;
+            args.WorldPos = Vector3.zero;
+            args.StartIndices = new Vector2(x, z);
+            args.Width = action.scaleX;
+            args.Depth = action.scaleZ;
+            OnTerrainModified(this, args);
         }
     }
 
-    private void ModifyHeightsAtPos(Vector3 localPos, int sizeX, int sizeZ, float height)
+    private void ModifyHeightsAtPos(Vector3 worldPos, int sizeX, int sizeZ, float height)
     {
+        Vector3 localPos = GetTerrainRelativePosition(worldPos);
+        int x = Mathf.RoundToInt(localPos.x);
+        int z = Mathf.RoundToInt(localPos.z);
         TerrainModificationAction action = new TerrainModificationAction(localPos, sizeX, sizeZ);
-        float[,] heights = _terrain.terrainData.GetHeights((int)localPos.x, (int)localPos.z, sizeX, sizeZ);
+        float[,] heights = _terrain.terrainData.GetHeights(x, z, sizeX, sizeZ);
         for (int i = 0; i < sizeZ; ++i)
         {
             for (int j = 0; j < sizeX; ++j)
@@ -411,12 +423,24 @@ public class TerrainManager : MonoBehaviour, IControllable
 
         _terrainActions.Add(action);
         _undoIndex += 1;
-        _terrain.terrainData.SetHeights((int)localPos.x, (int)localPos.z, heights);
+        _terrain.terrainData.SetHeights(x, z, heights);
 
         if (OnTerrainModified != null)
         {
-            OnTerrainModified(_undoIndex);
+            TerrainModArgs args = new TerrainModArgs();
+            args.UndoIndex = _undoIndex;
+            args.WasUndo = false;
+            args.WorldPos = worldPos;
+            args.StartIndices = new Vector2(x, z);
+            args.Width = sizeX;
+            args.Depth = sizeZ;
+            OnTerrainModified(this, args);
         }
+    }
+
+    public float GetTerrainHeightAt(Vector3 pos)
+    {
+        return _terrain.SampleHeight(pos);
     }
 
     public void AcceptAxisInput(float h, float v)

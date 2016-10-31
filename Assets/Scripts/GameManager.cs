@@ -36,6 +36,11 @@ public class GameManager : MonoBehaviour
     private WeatherManager _weatherManager;
     public WeatherManager WeatherManager { get { return _weatherManager; } set { _weatherManager = value; } }
 
+    [HideInInspector]
+    [SerializeField]
+    private TileManager _tileManager;
+    public TileManager TileManager { get { return _tileManager; } set { _tileManager = value; } }
+
     void Awake()
     {
         Instance = this;
@@ -57,6 +62,7 @@ public class GameManager : MonoBehaviour
         ////					   -> tiles need to be able to listen to events from tile manager and send events to back to it
 
         TerrainManager.LoadMap(_currentGame.WorldSeed);
+        TileManager.InitializeTiles(TerrainManager.MapSize);
 	}
 
     private void CreateManagers()
