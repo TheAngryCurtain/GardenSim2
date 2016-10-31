@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public class TerrainManager : MonoBehaviour, IControllable
 {
     public Action OnWorldCreated;
+    public Action<bool> OnInteractModeChanged;
     public event EventHandler OnTerrainModified;
 
     private struct TerrainModificationAction
@@ -55,7 +56,6 @@ public class TerrainManager : MonoBehaviour, IControllable
 
     void Start()
     {
-        GameManager.Instance.CameraController.OnPositionClick += OnTerrainClick;
         OnTerrainModified += UIController.Instance.OnTerrainModified;
         OnTerrainModified += GameManager.Instance.TileManager.OnTerrainModified;
 
@@ -69,6 +69,9 @@ public class TerrainManager : MonoBehaviour, IControllable
 
         if (_interactMode)
         {
+            GameManager.Instance.CameraController.OnPositionClick += OnTerrainClick;
+            GameManager.Instance.CameraController.OnCancelClick += OnTerrainCancel;
+
             if (_customHeightMarker == null)
             {
                 _customHeightMarker = (GameObject)Instantiate(_heightMarkerPrefab);
@@ -85,8 +88,16 @@ public class TerrainManager : MonoBehaviour, IControllable
         }
         else
         {
+            GameManager.Instance.CameraController.OnPositionClick -= OnTerrainClick;
+            GameManager.Instance.CameraController.OnCancelClick -= OnTerrainCancel;
+
             GameManager.Instance.InputController.SetControllable(null, ControllableType.Key);
             _customHeightMarker.SetActive(false);
+        }
+
+        if (OnInteractModeChanged != null)
+        {
+            OnInteractModeChanged(_interactMode);
         }
 
         return _interactMode;
@@ -289,7 +300,7 @@ public class TerrainManager : MonoBehaviour, IControllable
 	}
     #endregion
 
-    private void OnTerrainClick(int layer, Vector3 terrainPos)
+    private void OnTerrainClick(int layer, Vector3 terrainPos, GameObject obj)
     {
         if (layer == LayerMask.NameToLayer("Terrain"))
         {
@@ -346,6 +357,16 @@ public class TerrainManager : MonoBehaviour, IControllable
             {
                 Debug.Log("> Terrain Click");
             }
+        }
+    }
+
+    private void OnTerrainCancel()
+    {
+        if (_firstPointSet)
+        {
+            _firstPointSet = false;
+            _heightDragger.transform.localScale = Vector3.one;
+            _heightDragger.SetActive(false);
         }
     }
 
@@ -469,7 +490,8 @@ public class TerrainManager : MonoBehaviour, IControllable
     public void AcceptMousePosition(Vector3 pos)
     {
         int unusedLayer;
-        Vector3 worldPos = GameManager.Instance.CameraController.GetWorldPosFromScreen(pos, out unusedLayer);
+        GameObject obj;
+        Vector3 worldPos = GameManager.Instance.CameraController.GetWorldPosFromScreen(pos, out unusedLayer, out obj);
         worldPos.y = _firstPoint.y;
 
         Vector3 snappedPos = SnapToGrid(worldPos);

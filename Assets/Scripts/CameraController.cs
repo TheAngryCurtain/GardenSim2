@@ -4,7 +4,8 @@ using System;
 
 public class CameraController : MonoBehaviour, IControllable
 {
-    public Action<int, Vector3> OnPositionClick;
+    public Action<int, Vector3, GameObject> OnPositionClick;
+    public Action OnCancelClick;
 
 	enum ZoomDirection { IN = 0, OUT = 1 };
 
@@ -54,6 +55,10 @@ public class CameraController : MonoBehaviour, IControllable
         {
             InteractWithWorld(mousePosition);
         }
+        else if (a == MouseAction.RightClick)
+        {
+            CancelInteraction();
+        }
     }
 
 	public void AcceptScrollInput(float scroll)
@@ -86,10 +91,11 @@ public class CameraController : MonoBehaviour, IControllable
     private void InteractWithWorld(Vector3 pos)
     {
         int layer;
-        Vector3 worldPos = GetWorldPosFromScreen(pos, out layer);
+        GameObject obj;
+        Vector3 worldPos = GetWorldPosFromScreen(pos, out layer, out obj);
         if (OnPositionClick != null && layer != -1)
         {
-            OnPositionClick(layer, worldPos);
+            OnPositionClick(layer, worldPos, obj);
         }
         else
         {
@@ -97,17 +103,28 @@ public class CameraController : MonoBehaviour, IControllable
         }
     }
 
-    public Vector3 GetWorldPosFromScreen(Vector3 pos, out int layer)
+    private void CancelInteraction()
+    {
+        if (OnCancelClick != null)
+        {
+            OnCancelClick();
+        }
+    }
+
+    public Vector3 GetWorldPosFromScreen(Vector3 pos, out int layer, out GameObject obj)
     {
         Ray r = _camera.ScreenPointToRay(pos);
         RaycastHit hitInfo;
 
         if (Physics.Raycast(r, out hitInfo, _raycastDist, _clickLayers))
         {
-            layer = hitInfo.collider.gameObject.layer;
+            obj = hitInfo.collider.gameObject;
+            layer = obj.layer;
+
             return hitInfo.point;
         }
 
+        obj = null;
         layer = -1;
         return Vector3.zero;
     }

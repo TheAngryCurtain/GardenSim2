@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System;
 
 public class TileManager : MonoBehaviour
 {
@@ -15,6 +16,9 @@ public class TileManager : MonoBehaviour
     void Awake()
     {
         GameManager.Instance.TileManager = this;
+
+        GameManager.Instance.CameraController.OnPositionClick += OnTileClick;
+        GameManager.Instance.TerrainManager.OnInteractModeChanged += OninteractModeChanged;
     }
 
     public void InitializeTiles(int mapSize)
@@ -73,6 +77,26 @@ public class TileManager : MonoBehaviour
                     }
                 }
             }
+        }
+    }
+
+    private void OnTileClick(int layer, Vector3 terrainPos, GameObject obj)
+    {
+        if (layer == LayerMask.NameToLayer("Tile"))
+        {
+            Debug.Log(obj.transform.root.name);
+        }
+    }
+
+    private void OninteractModeChanged(bool interactMode)
+    {
+        if (interactMode)
+        {
+            GameManager.Instance.CameraController.OnPositionClick -= OnTileClick;
+        }
+        else
+        {
+            GameManager.Instance.CameraController.OnPositionClick += OnTileClick;
         }
     }
 }
