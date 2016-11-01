@@ -98,9 +98,9 @@ public class TileManager : MonoBehaviour
         int startX = (int)previousAction.StartIndex.x;
         int startZ = (int)previousAction.StartIndex.y;
 
-        for (int i = startX + 1; i < startX + args.Width; ++i)
+        for (int i = startX + 1; i < startX + previousAction.Width; ++i)
         {
-            for (int j = startZ + 1; j < startZ + args.Depth; ++j)
+            for (int j = startZ + 1; j < startZ + previousAction.Depth; ++j)
             {
                 if (_tiles[i, j] != null)
                 {

@@ -401,9 +401,6 @@ public class TerrainManager : MonoBehaviour, IControllable
             args.UndoIndex = _undoIndex;
             args.WasUndo = true;
             args.WorldPos = Vector3.zero;
-            args.StartIndices = new Vector2(x, z);
-            args.Width = action.Width;
-            args.Depth = action.Depth;
             OnTerrainModified(this, args);
         }
     }
@@ -434,9 +431,6 @@ public class TerrainManager : MonoBehaviour, IControllable
             args.UndoIndex = _undoIndex;
             args.WasUndo = false;
             args.WorldPos = worldPos;
-            args.StartIndices = new Vector2(x, z);
-            args.Width = sizeX;
-            args.Depth = sizeZ;
             OnTerrainModified(this, args);
         }
     }
