@@ -9,29 +9,12 @@ public class TerrainManager : MonoBehaviour, IControllable
     public Action<bool> OnInteractModeChanged;
     public event EventHandler OnTerrainModified;
 
-    private struct TerrainModificationAction
-    {
-        public float[,] OriginalHeights;
-        public Vector3 referencePoint;
-        public int scaleX;
-        public int scaleZ;
-
-        public TerrainModificationAction(Vector3 refPoint, int sizeX, int sizeZ)
-        {
-            OriginalHeights = new float[sizeZ, sizeX];
-            referencePoint = refPoint;
-            scaleX = sizeX;
-            scaleZ = sizeZ;
-        }
-    }
-
     [SerializeField] private GameObject _terrainPrefab;
     [SerializeField] private GameObject _waterPrefab;
     [SerializeField] private GameObject _heightMarkerPrefab;
     [SerializeField] private GameObject _heightDraggerPrefab;
 
-    private List<TerrainModificationAction> _terrainActions;
-
+    private ModificationManager _modifications;
     private Terrain _terrain;
     private int _worldSeed;
     private float _minDetailHeight = 1f;
@@ -59,7 +42,7 @@ public class TerrainManager : MonoBehaviour, IControllable
         OnTerrainModified += UIController.Instance.OnTerrainModified;
         OnTerrainModified += GameManager.Instance.TileManager.OnTerrainModified;
 
-        _terrainActions = new List<TerrainModificationAction>();
+        _modifications = ModificationManager.Instance;
     }
 
     #region UIController button click calls
@@ -105,13 +88,12 @@ public class TerrainManager : MonoBehaviour, IControllable
 
     public void UndoLastModify()
     {
-        int count = _terrainActions.Count;
+        int count = _modifications.RemainingActions;
         if (count > 0)
         {
-            TerrainModificationAction lastAction = _terrainActions[_undoIndex - 1];
-            _undoIndex -= 1;
+            ModificationAction lastAction = _modifications.RetreiveAction(_undoIndex - 1);
             ModifyHeightsFromAction(lastAction);
-            _terrainActions.Remove(lastAction);
+            _undoIndex -= 1;
         }
     }
     #endregion
@@ -397,17 +379,17 @@ public class TerrainManager : MonoBehaviour, IControllable
         return terrainLocalPos;
     }
 
-    private void ModifyHeightsFromAction(TerrainModificationAction action)
+    private void ModifyHeightsFromAction(ModificationAction action)
     {
-        int x = Mathf.RoundToInt(action.referencePoint.x);
-        int z = Mathf.RoundToInt(action.referencePoint.z);
-        float[,] existingHeights = _terrain.terrainData.GetHeights(x, z, action.scaleX, action.scaleZ);
+        int x = Mathf.RoundToInt(action.StartIndex.x);
+        int z = Mathf.RoundToInt(action.StartIndex.y);
+        float[,] existingHeights = _terrain.terrainData.GetHeights(x, z, action.Width, action.Depth);
 
-        for (int i = 0; i < action.scaleZ; ++i)
+        for (int i = 0; i < action.Depth; ++i)
         {
-            for (int j = 0; j < action.scaleX; ++j)
+            for (int j = 0; j < action.Width; ++j)
             {
-                existingHeights[i, j] = action.OriginalHeights[i, j];
+                existingHeights[i, j] = action.OriginalTerrainHeights[i, j];
             }
         }
 
@@ -420,8 +402,8 @@ public class TerrainManager : MonoBehaviour, IControllable
             args.WasUndo = true;
             args.WorldPos = Vector3.zero;
             args.StartIndices = new Vector2(x, z);
-            args.Width = action.scaleX;
-            args.Depth = action.scaleZ;
+            args.Width = action.Width;
+            args.Depth = action.Depth;
             OnTerrainModified(this, args);
         }
     }
@@ -431,18 +413,18 @@ public class TerrainManager : MonoBehaviour, IControllable
         Vector3 localPos = GetTerrainRelativePosition(worldPos);
         int x = Mathf.RoundToInt(localPos.x);
         int z = Mathf.RoundToInt(localPos.z);
-        TerrainModificationAction action = new TerrainModificationAction(localPos, sizeX, sizeZ);
+        ModificationAction action = new ModificationAction(x, z, sizeX, sizeZ);
         float[,] heights = _terrain.terrainData.GetHeights(x, z, sizeX, sizeZ);
         for (int i = 0; i < sizeZ; ++i)
         {
             for (int j = 0; j < sizeX; ++j)
             {
-                action.OriginalHeights[i, j] = heights[i, j];
+                action.OriginalTerrainHeights[i, j] = heights[i, j];
                 heights[i, j] = height;
             }
         }
 
-        _terrainActions.Add(action);
+        _modifications.RecordAction(action);
         _undoIndex += 1;
         _terrain.terrainData.SetHeights(x, z, heights);
 

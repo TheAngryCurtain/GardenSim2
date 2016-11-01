@@ -5,37 +5,22 @@ using System;
 
 public class TileManager : MonoBehaviour
 {
-    private struct TileModificationAction
-    {
-        public Vector2 StartIndex;
-        public int Width;
-        public int Depth;
-        public float[,] CurrentHeights;
-        public float[,] PreviousHeights;
-
-        public TileModificationAction(int x, int y, int width, int depth)
-        {
-            StartIndex = new Vector2(x, y);
-            Width = width;
-            Depth = depth;
-            CurrentHeights = new float[width, depth];
-            PreviousHeights = new float[width, depth];
-        }
-    };
-
     [SerializeField] private GameObject _tilePrefab;
 
     private Tile[,] _tiles;
-    private List<TileModificationAction> _tileActions;
+    private ModificationManager _modifications;
 
     void Awake()
     {
         GameManager.Instance.TileManager = this;
 
-        _tileActions = new List<TileModificationAction>();
-
         GameManager.Instance.CameraController.OnPositionClick += OnTileClick;
         GameManager.Instance.TerrainManager.OnInteractModeChanged += OninteractModeChanged;
+    }
+
+    void Start()
+    {
+        _modifications = ModificationManager.Instance;
     }
 
     public void InitializeTiles(int mapSize)
@@ -53,25 +38,28 @@ public class TileManager : MonoBehaviour
     public void OnTerrainModified(object sender, System.EventArgs e)
     {
         TerrainModArgs args = (TerrainModArgs)e;
-        int startX = (int)args.StartIndices[0];
-        int startZ = (int)args.StartIndices[1];
+
+        // get the action just created in the terrain manager
+        ModificationAction actionInProgress = _modifications.RetreiveAction(args.UndoIndex - 1);
 
         if (args.WasUndo)
         {
-            TileUndoCheck(startX, startZ, args);
+            TileUndoCheck(actionInProgress, args);
         }
         else
         {
-            TileCreationCheck(startX, startZ, args);
+            TileCreationCheck(actionInProgress, args);
         }
     }
 
-    private void TileCreationCheck(int startX, int startZ, TerrainModArgs args)
+    private void TileCreationCheck(ModificationAction action, TerrainModArgs args)
     {
-        TileModificationAction action = new TileModificationAction(startX, startZ, args.Width, args.Depth);
-        for (int i = startX + 1; i < startX + args.Width; ++i)
+        int startX = (int)action.StartIndex.x;
+        int startZ = (int)action.StartIndex.y;
+
+        for (int i = startX + 1; i < startX + action.Width; ++i)
         {
-            for (int j = startZ + 1; j < startZ + args.Depth; ++j)
+            for (int j = startZ + 1; j < startZ + action.Depth; ++j)
             {
                 if (_tiles[i, j] == null)
                 {
@@ -86,7 +74,7 @@ public class TileManager : MonoBehaviour
                     tileObj.transform.position = worldPos;
                     _tiles[i, j] = t;
 
-                    action.CurrentHeights[i - startX, j - startZ] = worldPos.y;
+                    action.CurrentTileHeights[i - startX, j - startZ] = worldPos.y;
                 }
                 else
                 {
@@ -94,22 +82,21 @@ public class TileManager : MonoBehaviour
                     Tile t = _tiles[i, j];
                     Vector3 pos = t.gameObject.transform.position;
 
-                    action.PreviousHeights[i - startX,j - startZ] = pos.y;
+                    action.PreviousTileHeights[i - startX, j - startZ] = pos.y;
 
                     pos.y = GameManager.Instance.TerrainManager.GetTerrainHeightAt(pos);
                     t.gameObject.transform.position = pos;
 
-                    action.CurrentHeights[i - startX, j - startZ] = pos.y;
+                    action.CurrentTileHeights[i - startX, j - startZ] = pos.y;
                 }
             }
         }
-
-        _tileActions.Add(action);
     }
 
-    private void TileUndoCheck(int startX, int startZ, TerrainModArgs args)
+    private void TileUndoCheck(ModificationAction previousAction, TerrainModArgs args)
     {
-        TileModificationAction previousAction = _tileActions[args.UndoIndex];
+        int startX = (int)previousAction.StartIndex.x;
+        int startZ = (int)previousAction.StartIndex.y;
 
         for (int i = startX + 1; i < startX + args.Width; ++i)
         {
@@ -117,11 +104,11 @@ public class TileManager : MonoBehaviour
             {
                 if (_tiles[i, j] != null)
                 {
-                    if (previousAction.PreviousHeights[i - startX, j - startZ] >= 0f)
+                    if (previousAction.PreviousTileHeights[i - startX, j - startZ] >= 0f)
                     {
                         // tile existed before and was moved, move it back
                         Vector3 oldPos = _tiles[i, j].transform.position;
-                        oldPos.y = previousAction.PreviousHeights[i - startX, j - startZ];
+                        oldPos.y = previousAction.PreviousTileHeights[i - startX, j - startZ];
                         _tiles[i, j].transform.position = oldPos;
                     }
                     else
@@ -135,7 +122,7 @@ public class TileManager : MonoBehaviour
             }
         }
 
-        _tileActions.Remove(previousAction);
+        _modifications.RemoveAction(previousAction);
     }
 
     private void OnTileClick(int layer, Vector3 terrainPos, GameObject obj)
