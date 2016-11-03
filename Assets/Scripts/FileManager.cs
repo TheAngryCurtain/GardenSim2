@@ -6,9 +6,14 @@ using System.IO;
 
 public static class FileManager
 {
+    public static System.Action OnGamesLoaded;
+
     private static string _fileExt = "sav";
     private static string _fileName = "GardenSim";
+    private static string _lastLoadedKey = "LastLoaded-";
     private static List<Game> _savedGames = new List<Game>();
+
+    public static int NumSavedGames { get { return _savedGames.Count; } }
 
     public static void LoadSavedGames()
     {
@@ -25,6 +30,11 @@ public static class FileManager
         else
         {
             Debug.Log("No save file found");
+        }
+
+        if (OnGamesLoaded != null)
+        {
+            OnGamesLoaded();
         }
     }
 
@@ -58,27 +68,35 @@ public static class FileManager
         SaveGames();
     }
 
-    public static Game LoadGame(int index)
+    public static Game NewGame()
     {
-        Game game = null;
-        if (_savedGames.Count == 0)
-        {
-            // no saves yet
-            Debug.Log("No games exist. creating new...");
-            game = new Game(0);
-            SaveGame(game);
-        }
-        else
-        {
-            if (index >= _savedGames.Count)
-            {
-                Debug.Log("Invalid game index");
-                return null;
-            }
-
-            game = _savedGames[index];
-        }
+        int newIndex = _savedGames.Count;
+        Game game = new Game(newIndex);
+        SetLastLoadedIndex(newIndex);
+        SaveGame(game);
 
         return game;
+    }
+
+    public static Game LoadGame(int index)
+    {
+        if (index < 0 || index >= _savedGames.Count)
+        {
+            Debug.Log("Invalid game index");
+            return null;
+        }
+
+        SetLastLoadedIndex(index);
+        return _savedGames[index];
+    }
+
+    public static int GetLastLoadedIndex()
+    {
+        return PlayerPrefs.GetInt(_lastLoadedKey);
+    }
+
+    public static void SetLastLoadedIndex(int index)
+    {
+        PlayerPrefs.SetInt(_lastLoadedKey, index);
     }
 }

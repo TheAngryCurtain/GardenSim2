@@ -1,18 +1,28 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.SceneManagement;
+
+public enum Menu
+{
+    Main
+}
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
+    public enum State
+    {
+        Unknown, // just for default at game start
+        Init,
+        MainMenu,
+        Loading,
+        InGame
+    }
+
 	[SerializeField] private Texture2D _cursor;
-    [SerializeField] private GameObject[] _managers;
-
-    private Game _currentGame;
-
-    // TODO
-    // Create all objects that need to be in the scene
-    // hook up the events listeners/handlers
+    [SerializeField] private GameObject[] _menuPrefabs;
+    [SerializeField] private GameObject[] _managerPrefabs;
 
     [HideInInspector]
     [SerializeField] private TerrainManager _terrainManager;
@@ -41,35 +51,169 @@ public class GameManager : MonoBehaviour
     private TileManager _tileManager;
     public TileManager TileManager { get { return _tileManager; } set { _tileManager = value; } }
 
+    private Game _currentGame;
+    private State _currentState;
+    private State _previousState = State.Unknown;
+    private MenuUIController _activeMenu;
+    private Menu _previousMenuType;
+
     void Awake()
     {
+        DontDestroyOnLoad(this.gameObject);
         Instance = this;
 
-        FileManager.LoadSavedGames();
+        _currentState = State.Init;
     }
 
-	void Start()
-	{
+    void Update()
+    {
+        if (_currentState != _previousState)
+        {
+            _previousState = _currentState;
+            ActOnState();
+        }
+    }
+
+    private void ActOnState()
+    {
+        switch (_currentState)
+        {
+            case State.Init:
+                Init();
+                break;
+
+            case State.MainMenu:
+                LoadMenu(Menu.Main);
+                break;
+
+            case State.Loading:
+                UnloadMenu(_previousMenuType);
+                break;
+
+            case State.InGame:
+                InitMap();
+                break;
+        }
+    }
+
+    private void Init()
+    {
+        Cursor.SetCursor(_cursor, Vector2.zero, CursorMode.ForceSoftware);
+
+        FileManager.LoadSavedGames();
+
         // load first game for now
-        _currentGame = FileManager.LoadGame(0);
-        Debug.LogFormat("Game -> save slot: {0}, seed: {1}", _currentGame.SaveSlot, _currentGame.WorldSeed);
+        //_currentGame = FileManager.LoadGame(0);
 
-		Cursor.SetCursor(_cursor, Vector2.zero, CursorMode.ForceSoftware);
+        _currentState = State.MainMenu;
+    }
 
+    private void UnloadMenu(Menu type)
+    {
+        if (_activeMenu != null)
+        {
+            _activeMenu.RemoveSubMenuListeners((int)_previousMenuType);
+            Destroy(_activeMenu.gameObject);
+            _activeMenu = null;
+        }
+    }
+
+    private void LoadMenu(Menu menuType)
+    {
+        UnloadMenu(_previousMenuType);
+
+        Transform canvas = GameObject.Find("Canvas").transform;
+        GameObject menu = (GameObject)GameObject.Instantiate(_menuPrefabs[(int)menuType], canvas);
+        _activeMenu = menu.GetComponent<MenuUIController>();
+        _previousMenuType = menuType;
+        menu.transform.localPosition = Vector3.zero;
+        menu.transform.localScale = Vector3.one;
+
+        switch (menuType)
+        {
+            case Menu.Main:
+                int main = (int)menuType;
+                _activeMenu.SetButtonListener(main, 0, OnContinueGameClicked);
+                _activeMenu.SetButtonListener(main, 1, OnLoadGameClicked);
+                _activeMenu.SetButtonListener(main, 2, OnNewGameClicked);
+                _activeMenu.SetButtonListener(main, 3, OnOptionsClicked);
+                _activeMenu.SetButtonListener(main, 4, OnExitClicked);
+
+                // hide continue button if there are no saved games
+                _activeMenu.ShowMenuButton(main, 0, (FileManager.NumSavedGames > 0));
+                break;
+        }
+    }
+
+    #region Main Menu Actions
+    private void OnContinueGameClicked()
+    {
+        int lastGameIndex = FileManager.GetLastLoadedIndex();
+        _currentGame = FileManager.LoadGame(lastGameIndex);
+        Debug.LogFormat("Loaded Game -> save slot: {0}, seed: {1}", _currentGame.SaveSlot, _currentGame.WorldSeed);
+        _currentState = State.Loading;
+        LoadScene(1);
+    }
+
+    private void OnLoadGameClicked()
+    {
+        // TODO change to the load game sub menu
+        Debug.Log("TODO");
+    }
+
+    private void OnNewGameClicked()
+    {
+        _currentGame = FileManager.NewGame();
+        Debug.LogFormat("New Game -> save slot: {0}, seed: {1}", _currentGame.SaveSlot, _currentGame.WorldSeed);
+        _currentState = State.Loading;
+        LoadScene(1);
+    }
+
+    private void OnOptionsClicked()
+    {
+        // TODO change to the options sub menu
+        Debug.Log("TODO");
+    }
+
+    private void OnExitClicked()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+#endregion
+
+    #region Scene Loading
+    private void LoadScene(int sceneIndex)
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+
+        SceneManager.LoadScene(sceneIndex);
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        _currentState = State.InGame;
+    }
+    #endregion
+
+    private void InitMap()
+    {
         CreateManagers();
-
-        //// create tile manager -> creates new tiles and have them subscribe to events
-        ////					   -> tiles need to be able to listen to events from tile manager and send events to back to it
 
         TerrainManager.LoadMap(_currentGame.WorldSeed);
         TileManager.InitializeTiles(TerrainManager.MapSize);
-	}
+    }
 
     private void CreateManagers()
     {
-        for (int i = 0; i < _managers.Length; ++i)
+        for (int i = 0; i < _managerPrefabs.Length; ++i)
         {
-            GameObject.Instantiate(_managers[i], Vector3.zero, Quaternion.identity);
+            GameObject.Instantiate(_managerPrefabs[i], Vector3.zero, Quaternion.identity);
         }
     }
 }
