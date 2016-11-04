@@ -188,7 +188,7 @@ public class GameManager : MonoBehaviour
     {
         _currentGame = FileManager.LoadGame(gameIndex);
         _currentState = State.Loading;
-        LoadScene(2);
+        LoadScene(1);
     }
 
     private void CreateNewGame(string gameName)
@@ -196,7 +196,7 @@ public class GameManager : MonoBehaviour
         _currentGame = FileManager.NewGame(gameName);
         Debug.LogFormat("New Game -> save slot: {0}, seed: {1}", _currentGame.SaveSlot, _currentGame.WorldSeed);
         _currentState = State.Loading;
-        LoadScene(2);
+        LoadScene(1);
     }
 
     private void ExitGame()
