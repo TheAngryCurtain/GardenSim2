@@ -4,7 +4,10 @@ using UnityEngine.SceneManagement;
 
 public enum Menu
 {
-    Main
+    Main,
+    NewGame,
+    LoadGame,
+    Option
 }
 
 public class GameManager : MonoBehaviour
@@ -55,7 +58,7 @@ public class GameManager : MonoBehaviour
     private State _currentState;
     private State _previousState = State.Unknown;
     private MenuUIController _activeMenu;
-    private Menu _previousMenuType;
+    private 
 
     void Awake()
     {
@@ -87,7 +90,7 @@ public class GameManager : MonoBehaviour
                 break;
 
             case State.Loading:
-                UnloadMenu(_previousMenuType);
+                UnloadMenu();
                 break;
 
             case State.InGame:
@@ -99,20 +102,16 @@ public class GameManager : MonoBehaviour
     private void Init()
     {
         Cursor.SetCursor(_cursor, Vector2.zero, CursorMode.ForceSoftware);
-
         FileManager.LoadSavedGames();
-
-        // load first game for now
-        //_currentGame = FileManager.LoadGame(0);
 
         _currentState = State.MainMenu;
     }
 
-    private void UnloadMenu(Menu type)
+    private void UnloadMenu()
     {
         if (_activeMenu != null)
         {
-            _activeMenu.RemoveSubMenuListeners((int)_previousMenuType);
+            _activeMenu.RemoveMenuListeners();
             Destroy(_activeMenu.gameObject);
             _activeMenu = null;
         }
@@ -120,33 +119,63 @@ public class GameManager : MonoBehaviour
 
     private void LoadMenu(Menu menuType)
     {
-        UnloadMenu(_previousMenuType);
+        UnloadMenu();
 
         Transform canvas = GameObject.Find("Canvas").transform;
         GameObject menu = (GameObject)GameObject.Instantiate(_menuPrefabs[(int)menuType], canvas);
         _activeMenu = menu.GetComponent<MenuUIController>();
-        _previousMenuType = menuType;
         menu.transform.localPosition = Vector3.zero;
         menu.transform.localScale = Vector3.one;
 
+        int type = (int)menuType;
         switch (menuType)
         {
             case Menu.Main:
-                int main = (int)menuType;
-                _activeMenu.SetButtonListener(main, 0, OnContinueGameClicked);
-                _activeMenu.SetButtonListener(main, 1, OnLoadGameClicked);
-                _activeMenu.SetButtonListener(main, 2, OnNewGameClicked);
-                _activeMenu.SetButtonListener(main, 3, OnOptionsClicked);
-                _activeMenu.SetButtonListener(main, 4, OnExitClicked);
+                _activeMenu.SetTitle("Main Menu");
+                _activeMenu.SetButtonListener(0, ContinueGame);
+                _activeMenu.SetButtonListener(1, () => LoadMenu(Menu.NewGame) );
+                _activeMenu.SetButtonListener(2, () => LoadMenu(Menu.LoadGame) );
+                _activeMenu.SetButtonListener(3, () => LoadMenu(Menu.Option) );
+                _activeMenu.SetButtonListener(4, ExitGame);
 
                 // hide continue button if there are no saved games
-                _activeMenu.ShowMenuButton(main, 0, (FileManager.NumSavedGames > 0));
+                _activeMenu.ShowMenuButton(0, (FileManager.NumSavedGames > 0));
+                break;
+
+            case Menu.NewGame:
+                _activeMenu.SetTitle("Create Game");
+                _activeMenu.SetButtonListener(0, () => CreateNewGame(_activeMenu.GetFieldInput()) );
+                _activeMenu.SetButtonListener(1, () => LoadMenu(Menu.Main));
+
+                break;
+
+            case Menu.LoadGame:
+                _activeMenu.SetTitle("Load Game");
+                _activeMenu.SetButtonListener(0, () => LoadSelectedGame(_activeMenu.GetActiveToggleIndex()) );
+                _activeMenu.SetButtonListener(1, () => CopySelectedGame(_activeMenu.GetActiveToggleIndex()) );
+                _activeMenu.SetButtonListener(2, () => DeleteSelectedGame(_activeMenu.GetActiveToggleIndex()) );
+                _activeMenu.SetButtonListener(3, () => LoadMenu(Menu.Main) );
+
+                if (FileManager.NumSavedGames > 0)
+                {
+                    PopulateSavedGamesList(type);
+                }
+                else
+                {
+                    // disable load, copy, delete
+                    _activeMenu.DisableMenuButton(0, false);
+                    _activeMenu.DisableMenuButton(1, false);
+                    _activeMenu.DisableMenuButton(2, false);
+                }
+                break;
+
+            case Menu.Option:
                 break;
         }
     }
 
-    #region Main Menu Actions
-    private void OnContinueGameClicked()
+    #region menu Actions
+    private void ContinueGame()
     {
         int lastGameIndex = FileManager.GetLastLoadedIndex();
         _currentGame = FileManager.LoadGame(lastGameIndex);
@@ -155,27 +184,22 @@ public class GameManager : MonoBehaviour
         LoadScene(1);
     }
 
-    private void OnLoadGameClicked()
+    private void LoadSelectedGame(int gameIndex)
     {
-        // TODO change to the load game sub menu
-        Debug.Log("TODO");
+        _currentGame = FileManager.LoadGame(gameIndex);
+        _currentState = State.Loading;
+        LoadScene(2);
     }
 
-    private void OnNewGameClicked()
+    private void CreateNewGame(string gameName)
     {
-        _currentGame = FileManager.NewGame();
+        _currentGame = FileManager.NewGame(gameName);
         Debug.LogFormat("New Game -> save slot: {0}, seed: {1}", _currentGame.SaveSlot, _currentGame.WorldSeed);
         _currentState = State.Loading;
-        LoadScene(1);
+        LoadScene(2);
     }
 
-    private void OnOptionsClicked()
-    {
-        // TODO change to the options sub menu
-        Debug.Log("TODO");
-    }
-
-    private void OnExitClicked()
+    private void ExitGame()
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
@@ -183,7 +207,33 @@ public class GameManager : MonoBehaviour
         Application.Quit();
 #endif
     }
-#endregion
+
+    private void PopulateSavedGamesList(int menuIndex)
+    {
+        _activeMenu.SetScrollListData(menuIndex, FileManager.SavedGames);
+    }
+
+    private void CopySelectedGame(int gameIndex)
+    {
+        Game copy = FileManager.CopyGame(gameIndex);
+        _activeMenu.CopyToggleItem(copy.SaveSlot, copy.GameName);
+    }
+
+    private void DeleteSelectedGame(int gameIndex)
+    {
+        FileManager.DeleteGame(gameIndex);
+        _activeMenu.RemoveToggleItem(gameIndex);
+
+        if (FileManager.NumSavedGames == 0)
+        {
+            // disable load, copy, delete
+            _activeMenu.DisableMenuButton(0, false);
+            _activeMenu.DisableMenuButton(1, false);
+            _activeMenu.DisableMenuButton(2, false);
+        }
+    }
+
+    #endregion
 
     #region Scene Loading
     private void LoadScene(int sceneIndex)

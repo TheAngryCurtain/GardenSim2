@@ -63,7 +63,7 @@ public class TimeManager : MonoBehaviour
 
         // Increment our passage of time
         mDateTime.ApplyPassageOfTime(mTimePassedDelta);
-        //mDateTime.PrintDateTime();
+        
         RotateSun();
     }
 
@@ -151,7 +151,7 @@ public class TimeManager : MonoBehaviour
                         mCurrentTimeOfDay = TimeOfDay.Dusk;
                     }
 
-                    //timeFromEvent.PrintDateTime();
+                    timeFromEvent.PrintDateTime();
                 }
 
                 args.timeOfDay = mCurrentTimeOfDay;

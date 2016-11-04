@@ -13,6 +13,7 @@ public static class FileManager
     private static string _lastLoadedKey = "LastLoaded-";
     private static List<Game> _savedGames = new List<Game>();
 
+    public static List<Game> SavedGames { get { return _savedGames; } }
     public static int NumSavedGames { get { return _savedGames.Count; } }
 
     public static void LoadSavedGames()
@@ -68,10 +69,10 @@ public static class FileManager
         SaveGames();
     }
 
-    public static Game NewGame()
+    public static Game NewGame(string name)
     {
         int newIndex = _savedGames.Count;
-        Game game = new Game(newIndex);
+        Game game = new Game(name, newIndex);
         SetLastLoadedIndex(newIndex);
         SaveGame(game);
 
@@ -82,12 +83,52 @@ public static class FileManager
     {
         if (index < 0 || index >= _savedGames.Count)
         {
-            Debug.Log("Invalid game index");
+            Debug.Log("Invalid index to load");
             return null;
         }
 
         SetLastLoadedIndex(index);
         return _savedGames[index];
+    }
+
+    public static Game CopyGame(int index)
+    {
+        if (index >= _savedGames.Count)
+        {
+            Debug.Log("Invalid index to copy");
+            return null;
+        }
+
+        Game toCopy = _savedGames[index];
+        Game copy = new Game(string.Format("{0} (Copy)", toCopy.GameName), _savedGames.Count, true, toCopy.Player, toCopy.WorldSeed);
+        SaveGame(copy);
+
+        return copy;
+    }
+
+    public static void DeleteGame(int index)
+    {
+        int count = _savedGames.Count;
+        if (index >= count)
+        {
+            Debug.Log("Invalid index to delete");
+            return;
+        }
+
+        _savedGames.RemoveAt(index);
+        if (GetLastLoadedIndex() == index)
+        {
+            if (count > 0)
+            {
+                SetLastLoadedIndex(count - 1);
+            }
+            else
+            {
+                SetLastLoadedIndex(0);
+            }
+        }
+
+        SaveGames();
     }
 
     public static int GetLastLoadedIndex()
