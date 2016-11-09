@@ -37,7 +37,7 @@ public class WeatherManager : MonoBehaviour
     [SerializeField] private GameObject _rainPrefab;
     [SerializeField] private GameObject _snowPrefab;
 
-    private int _forecastLength = 14;
+    private int _forecastLength = 15;
     private int _maxWindAngle = 15;
     private int _minWeatherDuration = 3;
     private int _maxWeatherDuration = 18;
@@ -51,6 +51,7 @@ public class WeatherManager : MonoBehaviour
     private int _timeScale;
     private int _weatherSeed;
     private int _currentDay;
+    private int _currentMonth;
     private Season _currentSeason;
     private Vector3 _baseWindDirection;
     private ParticleSystem _rain;
@@ -73,8 +74,10 @@ public class WeatherManager : MonoBehaviour
         _sun = GameManager.Instance.TimeManager.Sun;
         InitWeatherPrefabs();
 
-        _currentDay = GameManager.Instance.TimeManager.CurrentDate.GetDay();
-        _currentSeason = GameManager.Instance.TimeManager.CurrentDate.GetSeason();
+        TimeManager tm = GameManager.Instance.TimeManager;
+        _currentDay = tm.CurrentDate.GetDay();
+        _currentMonth = tm.CurrentDate.GetMonth();
+        _currentSeason = tm.CurrentDate.GetSeason();
 
         _baseWindDirection = new Vector3(0f, prng.Next(360), 0f);
         transform.Rotate(_baseWindDirection);
@@ -123,7 +126,7 @@ public class WeatherManager : MonoBehaviour
             w.WindDirection = Quaternion.Euler(0f, angle, 0f) * _baseWindDirection;
 
             // temperature
-            int dayIndex = _currentDay + i;
+            int dayIndex = (_currentMonth * _currentDay) + i;
             w.AverageTemp = _temperatureCurve.Evaluate(dayIndex * step);
 
             w.DailyVariation = (float)weatherGen.NextDouble() + 1;
@@ -311,16 +314,13 @@ public class WeatherManager : MonoBehaviour
         // if it is a day weather should stop, stop it
 
         TimeChangedArgs changed = (TimeChangedArgs)args;
-        int day = changed.dateTime.GetDay();
-        int hour = changed.dateTime.GetHour();
-        if (changed.DayChanged || changed.HourChanged)
-        {
-            if (changed.DayChanged)
-            {
-                _currentDay = day;
-            }
+        _currentDay = changed.dateTime.GetDay();
+        _currentMonth = changed.dateTime.GetMonth();
+        _currentSeason = changed.dateTime.GetSeason();
 
-            UpdateTodaysWeather(_currentDay, hour);
+        if (changed.HourChanged)
+        {
+            UpdateTodaysWeather(_currentDay, changed.dateTime.GetHour());
         }
     }
 

@@ -89,12 +89,15 @@ public class CustomDateTime
                 mHour = 0;
                 mDayTimeSeconds = 0.0f;
 
-                if (mDay >= TimeConstants.DAYS_PER_MONTH)
+                if (mDay > TimeConstants.DAYS_PER_MONTH)
                 {
                     mMonth++;
                     mDay = 1;
 
-                    mSeason = (Season)(mMonth % TimeConstants.MONTHS_PER_SEASON);
+                    if (mMonth >= TimeConstants.MONTHS_PER_SEASON * ((int)mSeason + 1))
+                    {
+                        mSeason = (Season)(mSeason + 1);
+                    }
 
                     if (mMonth >= TimeConstants.MONTHS_PER_YEAR)
                     {

@@ -124,6 +124,10 @@ public class MenuUIController : MonoBehaviour
         toggle.group = _toggleGroup;
         toggleText.text = text;
 
+        // hack to make the item show up
+        toggleObj.SetActive(false);
+        toggleObj.SetActive(true);
+
         _toggleItems.Add(toggle);
     }
 

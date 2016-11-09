@@ -36,12 +36,11 @@ public class UIController : MonoBehaviour
 
     private void SetFlattenText(bool state)
     {
-        _flattenButtonText.text = (state ? "Select" : "Flatten");
+        _flattenButtonText.text = (state ? "Interact" : "Modify");
     }
 
-    public void OnTerrainModified(object sender, System.EventArgs e)
+    public void OnTerrainModified(int index)
     {
-        TerrainModArgs args = (TerrainModArgs)e;
-        _undoButton.interactable = (args.UndoIndex > 0);
+        _undoButton.interactable = (index > 0);
     }
 }

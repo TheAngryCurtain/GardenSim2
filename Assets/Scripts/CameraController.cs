@@ -97,10 +97,6 @@ public class CameraController : MonoBehaviour, IControllable
         {
             OnPositionClick(layer, worldPos, obj);
         }
-        else
-        {
-            Debug.LogWarning("No valid listener or invalid layer");
-        }
     }
 
     private void CancelInteraction()

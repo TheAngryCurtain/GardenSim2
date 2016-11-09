@@ -58,7 +58,6 @@ public class GameManager : MonoBehaviour
     private State _currentState;
     private State _previousState = State.Unknown;
     private MenuUIController _activeMenu;
-    private 
 
     void Awake()
     {
