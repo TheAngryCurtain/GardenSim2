@@ -28,8 +28,6 @@ public class WeatherManager : MonoBehaviour
         public int StartTime; // hour (0 - 24)
         public int Duration; // hours
         public bool MultiDay;
-
-        public float Temp { get { return AverageTemp + DailyVariation; } }
     }
 
     [SerializeField] private WindZone _windZone;
@@ -129,7 +127,7 @@ public class WeatherManager : MonoBehaviour
             int dayIndex = (_currentMonth * _currentDay) + i;
             w.AverageTemp = _temperatureCurve.Evaluate(dayIndex * step);
 
-            w.DailyVariation = (float)weatherGen.NextDouble() + 1;
+            w.DailyVariation = (float)weatherGen.NextDouble();
             w.NightVariation = w.DailyVariation + (1 + (int)_currentSeason);
 
             // precipitation
@@ -166,7 +164,7 @@ public class WeatherManager : MonoBehaviour
                         overflowHours = (w.StartTime + w.Duration) - hoursPerDay;
                     }
 
-                    w.WeatherType = (w.Temp < 0f ? eWeatherType.Snow : eWeatherType.Rain);
+                    w.WeatherType = (w.AverageTemp < 0f ? eWeatherType.Snow : eWeatherType.Rain);
                 }
                 else
                 {
@@ -191,8 +189,8 @@ public class WeatherManager : MonoBehaviour
         if (hour == 0)
         {
             // TODO update UI
-            Debug.LogFormat("Today's Weather: type: {0}, wind speed: {1}, wind direction: {2}, Temp: {3}, % precip: {4}, start time: {5}, duration: {6}, severity: {7}, multiday: {8}",
-                today.WeatherType, today.WindSpeed, today.WindDirection, today.Temp, today.ChanceOfPrecipitation, today.StartTime, today.Duration, today.Severity, today.MultiDay);
+            Debug.LogFormat("Today's Weather: type: {0}, wind speed: {1}, wind direction: {2}, Avg. Temp: {3}, % precip: {4}, start time: {5}, duration: {6}, severity: {7}, multiday: {8}",
+                today.WeatherType, today.WindSpeed, today.WindDirection, today.AverageTemp, today.ChanceOfPrecipitation, today.StartTime, today.Duration, today.Severity, today.MultiDay);
 
             // wind
             _windZone.windMain = today.WindSpeed;

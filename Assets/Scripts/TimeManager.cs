@@ -151,7 +151,7 @@ public class TimeManager : MonoBehaviour
                         mCurrentTimeOfDay = TimeOfDay.Dusk;
                     }
 
-                    timeFromEvent.PrintDateTime();
+                    //timeFromEvent.PrintDateTime();
                 }
 
                 args.timeOfDay = mCurrentTimeOfDay;
