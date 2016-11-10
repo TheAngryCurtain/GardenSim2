@@ -28,7 +28,7 @@ public class Game
         }
         else
         {
-            _player = new Player();
+            _player = new Player(50);
             _worldSeed = UnityEngine.Random.Range(0, int.MaxValue);
         }
     }

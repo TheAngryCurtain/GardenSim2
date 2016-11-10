@@ -3,6 +3,18 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 
+// TODO
+// break this menu controller into subclasses
+// -> scroll item menu thing
+// -> input item menu thing
+
+// maybe consider creating a unique scroll item menu for the loadgame menu
+// maybe make a "menu" for backend UI (in-game)
+// also for pause menu
+
+// !!!! THIS CAUSES AN ISSUE WITH HOW MENUS ARE HANDLED IN THE GAMEMANAGER !!!
+// need to find a solution to this first. Possibly an menu interface?
+
 public class MenuUIController : MonoBehaviour
 {
     [SerializeField] GameObject _togglePrefab;
@@ -17,7 +29,10 @@ public class MenuUIController : MonoBehaviour
 
     public void SetTitle(string title)
     {
-        _title.text = title;
+		if (_title != null)
+		{
+        	_title.text = title;
+		}
     }
 
     public int GetActiveToggleIndex()
