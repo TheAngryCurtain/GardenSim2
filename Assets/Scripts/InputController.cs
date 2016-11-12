@@ -52,8 +52,8 @@ public class InputController : MonoBehaviour
 
 	private void GetAxisInput()
 	{
-		_h = Input.GetAxis("Horizontal");
-		_v = Input.GetAxis("Vertical");
+		_h = Input.GetAxisRaw("Horizontal");
+		_v = Input.GetAxisRaw("Vertical");
 
 		if (_currentControllables[(int)ControllableType.Axis] != null)
 		{

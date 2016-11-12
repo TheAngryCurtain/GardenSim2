@@ -127,8 +127,8 @@ public class CameraController : MonoBehaviour, IControllable
 
     public void moveCamera(float translationH, float translationV)
 	{
-		translationH *= Time.deltaTime * _scrollSpeed * _currentZoomLevel;
-		translationV *= Time.deltaTime * _scrollSpeed * _currentZoomLevel;
+		translationH *= Time.unscaledDeltaTime * _scrollSpeed * _currentZoomLevel;
+		translationV *= Time.unscaledDeltaTime * _scrollSpeed * _currentZoomLevel;
 		
 		// Move camera
 		transform.Translate(translationH, 0, translationV, Space.World);

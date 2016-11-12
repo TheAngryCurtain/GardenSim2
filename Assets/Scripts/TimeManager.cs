@@ -16,13 +16,6 @@ public class TimeManager : MonoBehaviour
     private int mCurrentYear;
     private Season mCurrentSeason;
 
-    void Awake()
-    {
-        GameManager.Instance.TimeManager = this;
-
-        Init(new CustomDateTime());
-    }
-
     public CustomDateTime CurrentDate { get { return mDateTime; } }
 
     [SerializeField]
@@ -33,6 +26,13 @@ public class TimeManager : MonoBehaviour
     private GameObject cSun;
 
     public Light Sun { get { return cSun.GetComponent<Light>(); } }
+
+    void Awake()
+    {
+        GameManager.Instance.TimeManager = this;
+
+        Init(new CustomDateTime());
+    }
 
     public void Init(CustomDateTime dateTime)
     {
@@ -67,6 +67,27 @@ public class TimeManager : MonoBehaviour
         mDateTime.ApplyPassageOfTime(mTimePassedDelta);
         
         RotateSun();
+    }
+
+    public void ManipulateTime(int buttonID)
+    {
+        float timeScale = Time.timeScale;
+        switch (buttonID)
+        {
+            case 0: // play
+                timeScale = 1f;
+                break;
+
+            case 1: // pause
+                timeScale = 0f;
+                break;
+
+            case 2: // fast forward
+                timeScale *= 2f;
+                break;
+        }
+
+        Time.timeScale = timeScale;
     }
 
     // mDateTime.GetDayTimeSeconds() is the current time in seconds.

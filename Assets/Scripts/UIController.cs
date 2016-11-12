@@ -6,9 +6,8 @@ public class UIController : MonoBehaviour
 {
     public static UIController Instance;
 
-    [SerializeField] Text _flattenButtonText;
-
 	// terrain 
+    [SerializeField] Text _flattenButtonText;
     [SerializeField] Button _undoButton;
 
 	// player
@@ -21,12 +20,16 @@ public class UIController : MonoBehaviour
 	[SerializeField] Text _seasonLabel;
 	[SerializeField] Text _monthLabel;
 	[SerializeField] Text _dayLabel;
+    [SerializeField] Button _playButton;
+    [SerializeField] Button _pauseButton;
+    [SerializeField] Button _ffButton;
 
 	// weather
 	[SerializeField] Image _weatherIcon;
 	[SerializeField] Text _weatherTypeLabel;
 	[SerializeField] Text _weatherPrecipLabel;
 	[SerializeField] Text _weatherTempLabel;
+    [SerializeField] Sprite[] _weatherIcons;
 
     private bool _isModifying = false;
 
@@ -35,7 +38,12 @@ public class UIController : MonoBehaviour
         Instance = this;
     }
 
-    public void OnButtonClicked(int id)
+    void Start()
+    {
+        UpdateTimeButtonStates(Time.timeScale);
+    }
+
+    public void OnTerrainModButtonClicked(int id)
     {
         switch (id)
         {
@@ -50,6 +58,33 @@ public class UIController : MonoBehaviour
         }
 
         _undoButton.gameObject.SetActive(_isModifying);
+    }
+
+    public void OnTimeManipButtonClicked(int id)
+    {
+        GameManager.Instance.TimeManager.ManipulateTime(id);
+        UpdateTimeButtonStates(Time.timeScale);
+    }
+
+    private void UpdateTimeButtonStates(float currentScale)
+    {
+        _playButton.interactable = (currentScale == 0f || currentScale > 1f);
+        _pauseButton.interactable = (currentScale != 0f);
+        _ffButton.interactable = (currentScale > 0f && currentScale < 4f);
+
+        // fast forward subscript
+        Text subText = _ffButton.transform.GetChild(0).GetComponent<Text>();
+        string scale;
+        if (currentScale > 1f)
+        {
+            scale = string.Format("{0}x", currentScale);
+        }
+        else
+        {
+            scale = "";
+        }
+
+        subText.text = scale;
     }
 
     private void SetFlattenText(bool state)
@@ -113,7 +148,28 @@ public class UIController : MonoBehaviour
 
 	public void OnWeatherChanged(WeatherManager.WeatherInfo info)
 	{
-		// TODO icon
+        Sprite icon;
+		switch(info.WeatherType)
+        {
+            default:
+            case WeatherManager.eWeatherType.Sunny:
+                icon = _weatherIcons[0]; // [1] is moon, for the hour even though we don't know the time yet
+                break;
+
+            case WeatherManager.eWeatherType.Cloudy:
+                icon = _weatherIcons[2];
+                break;
+
+            case WeatherManager.eWeatherType.Rain:
+                icon = _weatherIcons[3];
+                break;
+
+            case WeatherManager.eWeatherType.Snow:
+                icon = _weatherIcons[4];
+                break;
+        }
+
+        _weatherIcon.sprite = icon;
 		_weatherTypeLabel.text = info.WeatherType.ToString();
 		_weatherPrecipLabel.text = string.Format("{0}%", info.ChanceOfPrecipitation);
 		_weatherTempLabel.text = string.Format("{0:0.0}°C", info.AverageTemp);
