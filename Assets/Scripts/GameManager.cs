@@ -55,6 +55,8 @@ public class GameManager : MonoBehaviour
     public TileManager TileManager { get { return _tileManager; } set { _tileManager = value; } }
 
     private Game _currentGame;
+    public Game Game { get { return _currentGame; } }
+
     private State _currentState;
     private State _previousState = State.Unknown;
     private MenuUIController _activeMenu;
@@ -256,6 +258,8 @@ public class GameManager : MonoBehaviour
 
         TerrainManager.LoadMap(_currentGame.WorldSeed);
         TileManager.InitializeTiles(TerrainManager.MapSize);
+
+        _currentGame.Player.Init();
     }
 
     private void CreateManagers()

@@ -67,15 +67,29 @@ public class UIController : MonoBehaviour
 		_playerWalletLabel.text = string.Format("${0}", current);
 	}
 
-	public void OnPlayerXpUpdated(int level, int total, int next)
+	public void OnPlayerXpUpdated(int level, int total, int next, int difference)
 	{
 		_playerLevelLabel.text = string.Format("Lv. {0}", level);
-		_playerXPBar.value = total / (float)next;
+
+        if (_playerXPBar.maxValue != next)
+        {
+            // it's assumed that the level went up and there is a new next
+            // update the min and max
+            _playerXPBar.minValue = total - difference;
+            _playerXPBar.maxValue = next;
+        }
+
+		_playerXPBar.value = (total / (float)next) * next;
 	}
 
 	public void OnPlayerStaminaUpdated(int current, int max)
 	{
-		_playerStaminaBar.value = current / (float)max;
+        if (_playerStaminaBar.maxValue != max)
+        {
+            _playerStaminaBar.maxValue = max;
+        }
+
+		_playerStaminaBar.value = (current / (float)max) * max;
 	}
 
 	public void OnTimeChanged(object sender, System.EventArgs e)

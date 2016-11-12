@@ -42,6 +42,8 @@ public class TerrainManager : MonoBehaviour, IControllable
     [SerializeField] private GameObject _waterPrefab;
     [SerializeField] private GameObject _heightMarkerPrefab;
     [SerializeField] private GameObject _heightDraggerPrefab;
+    [SerializeField] private Color _draggedValidColor;
+    [SerializeField] private Color _draggedInvalidColor;
     [SerializeField] private SeasonalData[] _seasonalData;
 
     private ModificationManager _modifications;
@@ -57,7 +59,9 @@ public class TerrainManager : MonoBehaviour, IControllable
     private Vector3 _firstPoint;
     private bool _firstPointSet = false;
     private GameObject _heightDragger = null;
+    private MeshRenderer _draggerRenderer;
     private int _currentActionIndex = 0;
+    private int _modifingCost = 0;
 
     public int WorldSeed { get { return _worldSeed; } }
     public bool InteractMode { get { return _interactMode; } }
@@ -95,6 +99,7 @@ public class TerrainManager : MonoBehaviour, IControllable
             if (_heightDragger == null)
             {
                 _heightDragger = (GameObject)Instantiate(_heightDraggerPrefab);
+                _draggerRenderer = _heightDragger.transform.GetChild(0).GetComponent<MeshRenderer>();
                 _heightDragger.SetActive(false);
             }
 
@@ -390,40 +395,45 @@ public class TerrainManager : MonoBehaviour, IControllable
                         _firstPointSet = true;
                         _firstPoint = objPos;
                         _heightDragger.transform.position = _firstPoint;
+                        _draggerRenderer.material.color = _draggedValidColor;
                         _heightDragger.SetActive(true);
 
                         GameManager.Instance.InputController.SetControllable(this, ControllableType.Position);
                     }
                     else
                     {
+                       
                         GameManager.Instance.InputController.SetControllable(null, ControllableType.Position);
                         int sizeX = Mathf.RoundToInt(_heightDragger.transform.localScale.x);
                         int sizeZ = Mathf.RoundToInt(_heightDragger.transform.localScale.z);
 
-                        // for indexing the terrain correctly with negative scales, just move the point back by the scale amount
-                        // and make the scale positive
-                        Vector3 modifiedFirstPoint = _firstPoint;
-                        if (sizeZ > 0)
+                        if (GameManager.Instance.Game.Player.CanAffordAction(_modifingCost))
                         {
-                            modifiedFirstPoint.z -= sizeZ;
-                        }
+                            // for indexing the terrain correctly with negative scales, just move the point back by the scale amount
+                            // and make the scale positive
+                            Vector3 modifiedFirstPoint = _firstPoint;
+                            if (sizeZ > 0)
+                            {
+                                modifiedFirstPoint.z -= sizeZ;
+                            }
 
-                        if (sizeX < 0)
-                        {
-                            modifiedFirstPoint.x += sizeX;
-                        }
+                            if (sizeX < 0)
+                            {
+                                modifiedFirstPoint.x += sizeX;
+                            }
 
-                        ModifyHeightsAtPos(modifiedFirstPoint, Mathf.Abs(sizeX), Mathf.Abs(sizeZ), _customHeight);
+                            ModifyHeightsAtPos(modifiedFirstPoint, Mathf.Abs(sizeX), Mathf.Abs(sizeZ), _customHeight);
+
+                            GameManager.Instance.Game.Player.ModifyStamina(-5);
+                            GameManager.Instance.Game.Player.ModifyTotalXP(50);
+                            GameManager.Instance.Game.Player.ModifyWallet(-1 * _modifingCost); // works out to be $1 a tile
+                        }
 
                         _firstPointSet = false;
                         _heightDragger.transform.localScale = Vector3.one;
                         _heightDragger.SetActive(false);
                     }
                 }
-            }
-            else
-            {
-                Debug.Log("> Terrain Click");
             }
         }
     }
@@ -714,7 +724,17 @@ public class TerrainManager : MonoBehaviour, IControllable
 
         newScale.x = firstToMouse.x;
         newScale.z = firstToMouse.z * -1;
-        _heightDragger.transform.localScale = newScale;
+
+        _modifingCost = (int)((newScale.x - 1) * (newScale.z - 1));
+        if (GameManager.Instance.Game.Player.CanAffordAction(_modifingCost))
+        {
+            _draggerRenderer.material.color = _draggedValidColor;
+            _heightDragger.transform.localScale = newScale;
+        }
+        else
+        {
+            _draggerRenderer.material.color = _draggedInvalidColor;
+        }
     }
 
     #region helper functions
@@ -733,5 +753,6 @@ public class TerrainManager : MonoBehaviour, IControllable
 
 		return _2d;
 	}
+
     #endregion
 }

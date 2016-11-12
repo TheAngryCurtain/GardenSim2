@@ -6,7 +6,7 @@ public class Player
 {
 	public System.Action<int> OnWalletValueChanged;
 	public System.Action<int, int> OnStaminaValueChanged;
-	public System.Action<int, int, int> OnTotalXPChanged;
+	public System.Action<int, int, int, int> OnTotalXPChanged;
 
 	private int _wallet;
 	private int _level;
@@ -16,18 +16,21 @@ public class Player
 
 	public Player(int maxStamina)
 	{
-		_wallet = 0;
+		_wallet = 100;
 		_level = 1;
 		_totalXP = 0;
 		_maxStamina = maxStamina;
 		_currentStamina = _maxStamina;
-
-		OnStaminaValueChanged += UIController.Instance.OnPlayerStaminaUpdated;
-		OnWalletValueChanged += UIController.Instance.OnPlayerWalletUpdated;
-		OnTotalXPChanged += UIController.Instance.OnPlayerXpUpdated;
-
-		RefreshValues();
 	}
+
+    public void Init()
+    {
+        OnStaminaValueChanged += UIController.Instance.OnPlayerStaminaUpdated;
+        OnWalletValueChanged += UIController.Instance.OnPlayerWalletUpdated;
+        OnTotalXPChanged += UIController.Instance.OnPlayerXpUpdated;
+
+        RefreshValues();
+    }
 
 	public void RefreshValues()
 	{
@@ -35,6 +38,11 @@ public class Player
 		ModifyWallet(0);
 		ModifyTotalXP(0);
 	}
+
+    public bool CanAffordAction(int cost)
+    {
+        return cost <= _wallet;
+    }
 
 	public void ModifyStamina(int amount)
 	{
@@ -56,16 +64,19 @@ public class Player
 
 	public void ModifyTotalXP(int amount)
 	{
-		int xpToNextLevel = GetXPForLevel(_level + 1);
+		int xpToNextLevel = GetXPForLevel(_level);
+        int delta = 0;
 		_totalXP += amount;
 		if (_totalXP >= xpToNextLevel)
 		{
 			_level += 1;
+            delta = _totalXP - xpToNextLevel;
+            xpToNextLevel = GetXPForLevel(_level);
 		}
 
 		if (OnTotalXPChanged != null)
 		{
-			OnTotalXPChanged(_level, _totalXP, xpToNextLevel);
+			OnTotalXPChanged(_level, _totalXP, xpToNextLevel, delta);
 		}
 	}
 
