@@ -12,7 +12,7 @@ public class WeatherManager : MonoBehaviour
         Snow
     };
 
-    private class WeatherInfo
+	public class WeatherInfo
     {
         public eWeatherType WeatherType;
 
@@ -29,6 +29,8 @@ public class WeatherManager : MonoBehaviour
         public int Duration; // hours
         public bool MultiDay;
     }
+
+	public System.Action<WeatherInfo> OnWeatherChanged;
 
     [SerializeField] private WindZone _windZone;
     [SerializeField] private AnimationCurve _temperatureCurve;
@@ -63,6 +65,8 @@ public class WeatherManager : MonoBehaviour
 
         GameManager.Instance.TerrainManager.OnWorldCreated += OnWorldCreated;
         GameManager.Instance.TimeManager.OnTimeChanged += OnTimeChanged;
+
+		OnWeatherChanged += UIController.Instance.OnWeatherChanged;
     }
 
     private void Init(int worldSeed)
@@ -283,6 +287,11 @@ public class WeatherManager : MonoBehaviour
                 _snow.gameObject.SetActive(false);
             }
         }
+
+		if (OnWeatherChanged != null)
+		{
+			OnWeatherChanged(today);
+		}
     }
 
     private IEnumerator LerpColor(Color next)

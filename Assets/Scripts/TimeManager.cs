@@ -53,6 +53,8 @@ public class TimeManager : MonoBehaviour
         {
             mDateTime.OnDateChanged += new OnDateChanged(OnPlayerDateTimeChanged);
         }
+
+		OnTimeChanged += UIController.Instance.OnTimeChanged;
     }
 
     void Update()

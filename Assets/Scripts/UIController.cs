@@ -5,10 +5,28 @@ using UnityEngine.UI;
 public class UIController : MonoBehaviour
 {
     public static UIController Instance;
-    
+
     [SerializeField] Text _flattenButtonText;
 
+	// terrain 
     [SerializeField] Button _undoButton;
+
+	// player
+	[SerializeField] Text _playerWalletLabel;
+	[SerializeField] Text _playerLevelLabel;
+	[SerializeField] Slider _playerStaminaBar;
+	[SerializeField] Slider _playerXPBar;
+
+	// time
+	[SerializeField] Text _seasonLabel;
+	[SerializeField] Text _monthLabel;
+	[SerializeField] Text _dayLabel;
+
+	// weather
+	[SerializeField] Image _weatherIcon;
+	[SerializeField] Text _weatherTypeLabel;
+	[SerializeField] Text _weatherPrecipLabel;
+	[SerializeField] Text _weatherTempLabel;
 
     private bool _isModifying = false;
 
@@ -43,4 +61,47 @@ public class UIController : MonoBehaviour
     {
         _undoButton.interactable = (index > 0);
     }
+
+	public void OnPlayerWalletUpdated(int current)
+	{
+		_playerWalletLabel.text = string.Format("${0}", current);
+	}
+
+	public void OnPlayerXpUpdated(int level, int total, int next)
+	{
+		_playerLevelLabel.text = string.Format("Lv. {0}", level);
+		_playerXPBar.value = total / (float)next;
+	}
+
+	public void OnPlayerStaminaUpdated(int current, int max)
+	{
+		_playerStaminaBar.value = current / (float)max;
+	}
+
+	public void OnTimeChanged(object sender, System.EventArgs e)
+	{
+		TimeChangedArgs args = (TimeChangedArgs)e;
+		if (args.DayChanged)
+		{
+			_dayLabel.text = args.dateTime.GetDay().ToString();
+		}
+
+		if (args.MonthChanged)
+		{
+			_monthLabel.text = args.dateTime.GetMonth().ToString();
+		}
+
+		if (args.SeasonChanged)
+		{
+			_seasonLabel.text = args.dateTime.GetSeason().ToString();
+		}
+	}
+
+	public void OnWeatherChanged(WeatherManager.WeatherInfo info)
+	{
+		// TODO icon
+		_weatherTypeLabel.text = info.WeatherType.ToString();
+		_weatherPrecipLabel.text = string.Format("{0}%", info.ChanceOfPrecipitation);
+		_weatherTempLabel.text = string.Format("{0:0.0}°C", info.AverageTemp);
+	}
 }

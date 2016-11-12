@@ -21,6 +21,12 @@ public class Player
 		_totalXP = 0;
 		_maxStamina = maxStamina;
 		_currentStamina = _maxStamina;
+
+		OnStaminaValueChanged += UIController.Instance.OnPlayerStaminaUpdated;
+		OnWalletValueChanged += UIController.Instance.OnPlayerWalletUpdated;
+		OnTotalXPChanged += UIController.Instance.OnPlayerXpUpdated;
+
+		RefreshValues();
 	}
 
 	public void RefreshValues()
