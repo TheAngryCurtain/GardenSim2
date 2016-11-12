@@ -4,9 +4,9 @@ using System.Collections;
 [System.Serializable]
 public class Player
 {
-	public System.Action<int> OnWalletValueChanged;
-	public System.Action<int, int> OnStaminaValueChanged;
-	public System.Action<int, int, int, int> OnTotalXPChanged;
+	public System.Action<int, int> OnWalletValueChanged;
+	public System.Action<int, int, int> OnStaminaValueChanged;
+	public System.Action<object> OnTotalXPChanged;
 
 	private int _wallet;
 	private int _level;
@@ -49,7 +49,7 @@ public class Player
 		_currentStamina += amount;
 		if (OnStaminaValueChanged != null)
 		{
-			OnStaminaValueChanged(_currentStamina, _maxStamina);
+			OnStaminaValueChanged(amount, _currentStamina, _maxStamina);
 		}
 	}
 
@@ -58,7 +58,7 @@ public class Player
 		_wallet += amount;
 		if (OnWalletValueChanged != null)
 		{
-			OnWalletValueChanged(_wallet);
+			OnWalletValueChanged(amount, _wallet);
 		}
 	}
 
@@ -76,7 +76,8 @@ public class Player
 
 		if (OnTotalXPChanged != null)
 		{
-			OnTotalXPChanged(_level, _totalXP, xpToNextLevel, delta);
+            object data = new object[] { amount, _level, _totalXP, xpToNextLevel, delta };
+			OnTotalXPChanged(data);
 		}
 	}
 

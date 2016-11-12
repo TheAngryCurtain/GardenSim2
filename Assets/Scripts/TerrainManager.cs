@@ -425,7 +425,7 @@ public class TerrainManager : MonoBehaviour, IControllable
                             ModifyHeightsAtPos(modifiedFirstPoint, Mathf.Abs(sizeX), Mathf.Abs(sizeZ), _customHeight);
 
                             GameManager.Instance.Game.Player.ModifyStamina(-5);
-                            GameManager.Instance.Game.Player.ModifyTotalXP(50);
+                            GameManager.Instance.Game.Player.ModifyTotalXP(2);
                             GameManager.Instance.Game.Player.ModifyWallet(-1 * _modifingCost); // works out to be $1 a tile
                         }
 
