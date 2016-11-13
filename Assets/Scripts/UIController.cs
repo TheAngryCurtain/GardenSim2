@@ -34,10 +34,6 @@ public class UIController : MonoBehaviour
     [SerializeField] Sprite[] _weatherIcons;
 
     private bool _isModifying = false;
-    private float _updateDelayTime = 1f;
-    private float _remainingDelayTime = 0f;
-    private float _countDownIncrement = 0.1f;
-    private bool _countDownRunning = false;
 
     void Awake()
     {
@@ -107,16 +103,13 @@ public class UIController : MonoBehaviour
 
 	public void OnPlayerWalletUpdated(int amount, int current)
 	{
-        StartUpdateCountDown();
         _playerWalletLabel.text = string.Format("${0}", current);
-
-        AddToPlayerUpdatePanel(2, amount);
     }
 
     public void OnPlayerXpUpdated(object data)
 	{
         object[] fields = (object[])data;
-        int amount = (int)fields[0];
+        //int amount = (int)fields[0];
         int level = (int)fields[1];
         int total = (int)fields[2];
         int next = (int)fields[3];
@@ -124,90 +117,55 @@ public class UIController : MonoBehaviour
 
 		_playerLevelLabel.text = string.Format("Lv. {0}", level);
 
-        StartUpdateCountDown();
         if (_playerXPBar.maxValue != next)
         {
             // it's assumed that the level went up and there is a new next
             // update the min and max
             _playerXPBar.minValue = total - difference;
             _playerXPBar.maxValue = next;
-
-            AddToPlayerUpdatePanel(0, level);
         }
 
 		_playerXPBar.value = (total / (float)next) * next;
-        AddToPlayerUpdatePanel(1, amount);
     }
 
     public void OnPlayerStaminaUpdated(int amount, int current, int max)
 	{
-        StartUpdateCountDown();
         if (_playerStaminaBar.maxValue != max)
         {
             _playerStaminaBar.maxValue = max;
         }
 
 		_playerStaminaBar.value = (current / (float)max) * max;
-        AddToPlayerUpdatePanel(3, amount);
     }
 
-    private void StartUpdateCountDown()
-    {
-        if (!_countDownRunning)
-        {
-            _countDownRunning = true;
-            _remainingDelayTime = _updateDelayTime;
+    // currently not used. Need to rethink the update panel
+    // should probably only show for level up bonuses, but until items
+    // have been designed, no point yet.
+    //private void AddToPlayerUpdatePanel(int index, int value)
+    //{
+    //    string title = "Level UP!";
+    //    _updatePanelTexts[0].text = title;
 
-            // empty out texts
-            for (int i = 0; i < _updatePanelTexts.Length; ++i)
-            {
-                _updatePanelTexts[i].text = string.Empty;
-            }
+    //    string attr = string.Empty;
+    //    switch (index)
+    //    {
+    //        case 1: attr = "Wallet"; break;
+    //        case 2: attr = "Stamina"; break;
+    //        case 3: attr = "<Item Name>"; break;
+    //    }
 
-            InvokeRepeating("CheckUpdatePanelTimer", 0f, _countDownIncrement);
-        }
-    }
+    //    string symbol = (value > 0 ? "+" : "-");
+    //    _updatePanelTexts[index].text = string.Format("{0} {1} {2}", attr, symbol, Mathf.Abs(value));
+    //}
 
-    private void CheckUpdatePanelTimer()
-    {
-        // general idea:
-        // once any player modification has happened, it will start the timer with startUpdateCountDown
-        // any other modifications that happen after have _updateDelayTime seconds to get their updates in before it's shown
-        // once zero is hit, the panel is shown
+    //private IEnumerator ShowUpdatePanel()
+    //{
+    //    _playerUpdatePanel.SetActive(true);
 
-        _remainingDelayTime -= _countDownIncrement;
-        if (_remainingDelayTime <= 0f)
-        {
-            _countDownRunning = false;
-            CancelInvoke("CheckUpdatePanelTimer");
-            StartCoroutine(ShowUpdatePanel());
-        }
-    }
+    //    yield return new WaitForSeconds(3f);
 
-    private void AddToPlayerUpdatePanel(int index, int value)
-    {
-        string attr = string.Empty;
-        switch (index)
-        {
-            case 0: attr = "Level"; break;
-            case 1: attr = "XP"; break;
-            case 2: attr = "Wallet"; break;
-            case 3: attr = "Stamina"; break;
-            case 4: attr = "???"; break;
-        }
-
-        string symbol = (value > 0 ? "+" : "-");
-        _updatePanelTexts[index].text = string.Format("{0} {1} {2}", attr, symbol, Mathf.Abs(value));
-    }
-
-    private IEnumerator ShowUpdatePanel()
-    {
-        _playerUpdatePanel.SetActive(true);
-
-        yield return new WaitForSeconds(3f);
-
-        _playerUpdatePanel.SetActive(false);
-    }
+    //    _playerUpdatePanel.SetActive(false);
+    //}
 
 	public void OnTimeChanged(object sender, System.EventArgs e)
 	{

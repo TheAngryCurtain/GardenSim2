@@ -72,6 +72,8 @@ public class Player
 			_level += 1;
             delta = _totalXP - xpToNextLevel;
             xpToNextLevel = GetXPForLevel(_level);
+
+            BoostStats();
 		}
 
 		if (OnTotalXPChanged != null)
@@ -80,6 +82,17 @@ public class Player
 			OnTotalXPChanged(data);
 		}
 	}
+
+    private void BoostStats()
+    {
+        int walletBonus = 15 * (_level * _level);
+        int maxStaminaIncrease = 5 * _level;
+
+        _wallet += walletBonus;
+        _maxStamina = maxStaminaIncrease;
+
+        RefreshValues();
+    }
 
 	private int GetXPForLevel(int level)
 	{
