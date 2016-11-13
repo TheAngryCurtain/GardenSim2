@@ -33,7 +33,12 @@ public class UIController : MonoBehaviour
 	[SerializeField] Text _weatherTempLabel;
     [SerializeField] Sprite[] _weatherIcons;
 
+    // tool
+    [SerializeField] Button _toolBoxButton;
+    [SerializeField] Button[] _toolButtons;
+
     private bool _isModifying = false;
+    private bool _toolsShowing = false;
 
     void Awake()
     {
@@ -66,6 +71,41 @@ public class UIController : MonoBehaviour
     {
         GameManager.Instance.TimeManager.ManipulateTime(id);
         UpdateTimeButtonStates(Time.timeScale);
+    }
+
+    public void OnToolBoxClicked()
+    {
+        _toolsShowing = !_toolsShowing;
+        ShowToolButtons(_toolsShowing);
+    }
+
+    private void ShowToolButtons(bool show)
+    {
+        for (int i = 0; i < _toolButtons.Length; ++i)
+        {
+            _toolButtons[i].gameObject.SetActive(show);
+        }
+    }
+
+    public void OnToolButtonClicked(int id)
+    {
+        switch (id)
+        {
+            case 0: // shovel
+                break;
+
+            case 1: // watering can
+                break;
+
+            case 2: // seeds
+                break;
+
+            case 3: // axe
+                break;
+
+            case 4: // decorations
+                break;
+        }
     }
 
     private void UpdateTimeButtonStates(float currentScale)
