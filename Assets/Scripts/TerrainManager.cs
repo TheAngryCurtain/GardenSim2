@@ -77,13 +77,15 @@ public class TerrainManager : MonoBehaviour, IControllable
         OnTerrainModified += UIController.Instance.OnTerrainModified;
         GameManager.Instance.TimeManager.OnTimeChanged += OnTimeChanged;
 
+        UIController.Instance.OnUndo += UndoLastModify;
+        UIController.Instance.OnTerrainModifyModeChanged += ToggleInteractMode;
+
         _modifications = ModificationManager.Instance;
     }
 
-    #region UIController button click calls
-    public bool ToggleInteractMode()
+    private void ToggleInteractMode(bool modifying)
     {
-        _interactMode = !_interactMode;
+        _interactMode = modifying;
 
         if (_interactMode)
         {
@@ -118,11 +120,9 @@ public class TerrainManager : MonoBehaviour, IControllable
         {
             OnInteractModeChanged(_interactMode);
         }
-
-        return _interactMode;
     }
 
-    public void UndoLastModify()
+    private void UndoLastModify()
     {
         int count = _modifications.RemainingActions;
         if (count > 0)
@@ -131,7 +131,6 @@ public class TerrainManager : MonoBehaviour, IControllable
             ModifyHeightsFromAction(lastAction);
         }
     }
-    #endregion
 
     // initalize
     public void LoadMap(int seed)

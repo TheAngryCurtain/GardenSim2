@@ -13,14 +13,20 @@ public class Player
 	private int _totalXP;
 	private int _maxStamina;
 	private int _currentStamina;
+    private int _maxInventorySize;
 
-	public Player(int maxStamina)
+    [SerializeField] private Inventory _inventory;
+
+	public Player(int maxStamina, int maxInvSize)
 	{
 		_wallet = 100;
 		_level = 1;
 		_totalXP = 0;
 		_maxStamina = maxStamina;
 		_currentStamina = _maxStamina;
+        _maxInventorySize = maxInvSize;
+
+        _inventory = new Inventory(maxInvSize);
 	}
 
     public void Init()

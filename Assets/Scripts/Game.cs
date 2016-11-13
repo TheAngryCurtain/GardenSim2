@@ -28,7 +28,9 @@ public class Game
         }
         else
         {
-            _player = new Player(50);
+            int maxStamina = 50;
+            int invSize = 10;
+            _player = new Player(maxStamina, invSize);
             _worldSeed = UnityEngine.Random.Range(0, int.MaxValue);
         }
     }

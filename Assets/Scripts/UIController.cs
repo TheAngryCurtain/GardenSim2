@@ -6,6 +6,10 @@ public class UIController : MonoBehaviour
 {
     public static UIController Instance;
 
+    public System.Action<bool> OnTerrainModifyModeChanged;
+    public System.Action OnUndo;
+    public System.Action<int> OnToolSelected;
+
 	// terrain 
     [SerializeField] Button _modifyButton;
     [SerializeField] Button _undoButton;
@@ -55,12 +59,19 @@ public class UIController : MonoBehaviour
         switch (id)
         {
             case 0: // flatten terrain
-                _isModifying = GameManager.Instance.TerrainManager.ToggleInteractMode();
+                _isModifying = !_isModifying;
+                if (OnTerrainModifyModeChanged != null)
+                {
+                    OnTerrainModifyModeChanged(_isModifying);
+                }
                 _modifyButton.GetComponentInChildren<Text>().text = (_isModifying ? "Interact" : "Modify");
                 break;
 
             case 1: // undo terrain modify
-                GameManager.Instance.TerrainManager.UndoLastModify();
+                if (OnUndo != null)
+                {
+                    OnUndo();
+                }
                 break;
         }
 
@@ -89,22 +100,9 @@ public class UIController : MonoBehaviour
 
     public void OnToolButtonClicked(int id)
     {
-        switch (id)
+        if (OnToolSelected != null)
         {
-            case 0: // shovel
-                break;
-
-            case 1: // watering can
-                break;
-
-            case 2: // seeds
-                break;
-
-            case 3: // axe
-                break;
-
-            case 4: // decorations
-                break;
+            OnToolSelected(id);
         }
     }
 
