@@ -35,7 +35,88 @@ public class TileManager : MonoBehaviour
 
     public void SetTileAt(int x, int y, Tile t)
     {
+        // if there is a tile here, and it's about to be set to null, remove listener
+        Tile existing = _tiles[x, y];
+        if (existing != null)
+        {
+            existing.StateChanged -= HandleTileStateChange;
+        }
+
+        if (t != null)
+        {
+            t.StateChanged += HandleTileStateChange;
+        }
+
         _tiles[x, y] = t;
+    }
+
+    private void HandleTileStateChange(int tileX, int tileZ)
+    {
+        List<Tile> neighbours = new List<Tile>();
+        int mapSize = 256; // pretty sure this is the size.. don't remember where to find it. Terrain data maybe?
+
+        // check the 8 surrounding neighbours
+        int above = tileZ + 1;
+        int below = tileZ - 1;
+        int left = tileX - 1;
+        int right = tileX + 1;
+
+        // above row
+        if (above < mapSize)
+        {
+            neighbours.Add(_tiles[tileX, above]);
+            if (left > 0)
+            {
+                neighbours.Add(_tiles[left, above]);
+            }
+
+            if (right < mapSize)
+            {
+                neighbours.Add(_tiles[right, above]);
+            }
+        }
+
+        // below row
+        if (below > 0)
+        {
+            neighbours.Add(_tiles[tileX, below]);
+            if (left > 0)
+            {
+                neighbours.Add(_tiles[left, below]);
+            }
+
+            if (right < mapSize)
+            {
+                neighbours.Add(_tiles[right, below]);
+            }
+        }
+
+        // left and right
+        if (left > 0)
+        {
+            neighbours.Add(_tiles[left, tileZ]);
+        }
+
+        if (right < mapSize)
+        {
+            neighbours.Add(_tiles[right, tileZ]);
+        }
+
+        NotifyNeighboursOfChange(neighbours);
+    }
+
+    // TODO this will need some parameters for the type of change
+    private void NotifyNeighboursOfChange(List<Tile> validNeighbours)
+    {
+        Tile t = null;
+        for (int i = 0; i < validNeighbours.Count; ++i)
+        {
+            t = validNeighbours[i];
+            if (t != null)
+            {
+                t.OnNeighbourChanged();
+            }
+        }
     }
 
     private void OninteractModeChanged(bool interactMode)

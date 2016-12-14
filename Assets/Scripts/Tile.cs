@@ -3,9 +3,15 @@ using System.Collections;
 
 public class Tile : InteractableObject
 {
+    public System.Action<int, int> StateChanged;
+
 	public enum SoilState
     {
-        
+        Blocked,
+        Untouched,
+        Dug,
+        Seeded,
+        Harvested
     }
 
     private SoilState _state;
@@ -26,8 +32,19 @@ public class Tile : InteractableObject
         EnableInteraction(interact);
     }
 
+    public void OnNeighbourChanged()
+    {
+        Debug.LogFormat("{0} heard a change from neighbour", this.gameObject.name);
+    }
+
     protected override void ClickAction()
     {
         Debug.Log(this.gameObject.name);
+
+        // test
+        //StateChanged(X, Y);
     }
+
+    // TODO change state function
+    // call StateChanged(_xIndex, _yIndex) or X,Y
 }
