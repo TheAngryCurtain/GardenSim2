@@ -39,6 +39,8 @@ public class UIController : MonoBehaviour
 
     // tool
     [SerializeField] Button _toolBoxButton;
+	[SerializeField] Sprite[] _toolIcons;
+	[SerializeField] Image _activeToolIcon;
     [SerializeField] Button[] _toolButtons;
 
     private bool _isModifying = false;
@@ -52,6 +54,7 @@ public class UIController : MonoBehaviour
     void Start()
     {
         UpdateTimeButtonStates(Time.timeScale);
+		SetActiveToolIcon(ItemData.eToolType.None);
     }
 
     public void OnTerrainModButtonClicked(int id)
@@ -100,8 +103,12 @@ public class UIController : MonoBehaviour
 
     public void OnToolButtonClicked(int id)
     {
-        if (OnToolSelected != null)
-        {
+		SetActiveToolIcon((ItemData.eToolType)id);
+		ShowToolButtons(false);
+		_toolsShowing = false;
+
+		if (OnToolSelected != null)
+		{
             OnToolSelected(id);
         }
     }
@@ -128,6 +135,18 @@ public class UIController : MonoBehaviour
 
         OnTimeStopped(currentScale == 0f);
     }
+
+	private void SetActiveToolIcon(ItemData.eToolType tool)
+	{
+		if (tool == ItemData.eToolType.None)
+		{
+			_activeToolIcon.gameObject.SetActive(false);
+			return;
+		}
+
+		_activeToolIcon.gameObject.SetActive(true);
+		_activeToolIcon.sprite = _toolIcons[(int)tool];
+	}
 
     private void OnTimeStopped(bool stopped)
     {
