@@ -55,6 +55,11 @@ public class UIController : MonoBehaviour
     {
         UpdateTimeButtonStates(Time.timeScale);
 		SetActiveToolIcon(ItemData.eToolType.None);
+
+        // test
+        //UnlockTools(0); // lock all
+        //UnlockToolAtIndex(0, true);
+        //UnlockToolAtIndex(2, true);
     }
 
     public void OnTerrainModButtonClicked(int id)
@@ -89,8 +94,23 @@ public class UIController : MonoBehaviour
 
     public void OnToolBoxClicked()
     {
-        _toolsShowing = !_toolsShowing;
-        ShowToolButtons(_toolsShowing);
+        if (Input.GetKey(KeyCode.LeftShift))
+        {
+            // default back to hand
+            SetActiveToolIcon(ItemData.eToolType.None);
+            _toolsShowing = false;
+            ShowToolButtons(false);
+
+            if (OnToolSelected != null)
+            {
+                OnToolSelected(-1);
+            }
+        }
+        else
+        {
+            _toolsShowing = !_toolsShowing;
+            ShowToolButtons(_toolsShowing);
+        }
     }
 
     private void ShowToolButtons(bool show)
@@ -99,6 +119,26 @@ public class UIController : MonoBehaviour
         {
             _toolButtons[i].gameObject.SetActive(show);
         }
+    }
+
+    private void UnlockTools(int count)
+    {
+        bool unlocked = false;
+        for (int i = 0; i < _toolButtons.Length; ++i)
+        {
+            unlocked = (i < count);
+            UnlockToolAtIndex(i, unlocked);
+        }
+    }
+
+    private void UnlockToolAtIndex(int index, bool unlock)
+    {
+        _toolButtons[index].interactable = unlock;
+    }
+
+    private void OnToolUnlocked(int count)
+    {
+        UnlockTools(count);
     }
 
     public void OnToolButtonClicked(int id)

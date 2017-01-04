@@ -35,6 +35,9 @@ public class Player
         OnWalletValueChanged += UIController.Instance.OnPlayerWalletUpdated;
         OnTotalXPChanged += UIController.Instance.OnPlayerXpUpdated;
 
+        UIController.Instance.OnToolSelected += OnToolChanged;
+        // TODO OnToolUnlocked += UIController.Instance.OnToolUnlocked with count of total tools
+
         RefreshValues();
     }
 
@@ -104,4 +107,14 @@ public class Player
 	{
 		return Mathf.RoundToInt(100 * Mathf.Pow(level, 1.5f));
 	}
+
+    public ItemData GetCurrentTool()
+    {
+        return _inventory.CurrentTool;
+    }
+
+    private void OnToolChanged(int toolIndex)
+    {
+        _inventory.SetCurrentTool(toolIndex);
+    }
 }
