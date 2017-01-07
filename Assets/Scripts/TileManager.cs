@@ -7,6 +7,8 @@ public class TileManager : MonoBehaviour
 {
     public Action<bool> OnEnableInteraction;
 
+    [SerializeField] private GameObject _dirtMoundPrefab;
+
     private Tile[,] _tiles;
 
     void Awake()
@@ -50,8 +52,22 @@ public class TileManager : MonoBehaviour
         _tiles[x, y] = t;
     }
 
+    private void CheckForSoilChange(int x, int z)
+    {
+        Tile t = _tiles[x, z];
+        switch (t.State)
+        {
+            case Tile.eSoilState.Dug:
+                GameObject soilObj = (GameObject)Instantiate(_dirtMoundPrefab, t.transform.position, Quaternion.Euler(new Vector3(0f, UnityEngine.Random.Range(0, 360), 0f)));
+                t.SoilObject = soilObj;
+                break;
+        }
+    }
+
     private void HandleTileStateChange(int tileX, int tileZ)
     {
+        CheckForSoilChange(tileX, tileZ);
+
         List<Tile> neighbours = new List<Tile>();
         int mapSize = 256; // pretty sure this is the size.. don't remember where to find it. Terrain data maybe?
 
