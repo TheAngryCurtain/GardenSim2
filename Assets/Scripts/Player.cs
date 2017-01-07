@@ -108,7 +108,7 @@ public class Player
 		return Mathf.RoundToInt(100 * Mathf.Pow(level, 1.5f));
 	}
 
-    public ItemData GetCurrentTool()
+    public ToolData GetCurrentTool()
     {
         return _inventory.CurrentTool;
     }

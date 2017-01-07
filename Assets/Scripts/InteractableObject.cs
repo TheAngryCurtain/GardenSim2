@@ -18,7 +18,7 @@ public class InteractableObject : MonoBehaviour
     {
         if (_interactable)
         {
-            UpdateAlpha(1f);
+            OnObjectHoverEnter();
         }
     }
 
@@ -26,7 +26,7 @@ public class InteractableObject : MonoBehaviour
     {
         if (_interactable)
         {
-            UpdateAlpha(_defaultAlpha);
+            OnObjectHoverExit();
         }
     }
 
@@ -43,12 +43,22 @@ public class InteractableObject : MonoBehaviour
 
     }
 
+    protected virtual void OnObjectHoverEnter()
+    {
+        UpdateAlpha(1f);
+    }
+
+    protected virtual void OnObjectHoverExit()
+    {
+        UpdateAlpha(_defaultAlpha);
+    }
+
     protected void EnableInteraction(bool enable)
     {
         _interactable = enable;
     }
 
-    private void UpdateAlpha(float value)
+    protected void UpdateAlpha(float value)
     {
         _colorComponent = _renderer.material.color;
         _colorComponent.a = value;

@@ -46,13 +46,13 @@ public class Tile : InteractableObject
         Debug.Log(this.gameObject.name);
 
         eSoilState previous = _state;
-        ItemData tool = GameManager.Instance.Game.Player.GetCurrentTool();
+        ToolData tool = GameManager.Instance.Game.Player.GetCurrentTool();
         if (tool != null)
         {
             Debug.Log(tool.Description);
             switch (tool.ToolType)
             {
-                case ItemData.eToolType.Shovel:
+                case ToolData.eToolType.Shovel:
                     if (_state == eSoilState.Untouched)
                     {
                         _state = eSoilState.Dug;
@@ -66,5 +66,15 @@ public class Tile : InteractableObject
                 previous = _state;
             }
         }
+    }
+
+    protected override void OnObjectHoverEnter()
+    {
+        base.OnObjectHoverEnter();
+    }
+
+    protected override void OnObjectHoverExit()
+    {
+        base.OnObjectHoverExit();
     }
 }

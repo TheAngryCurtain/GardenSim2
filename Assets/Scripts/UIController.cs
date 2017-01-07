@@ -54,7 +54,7 @@ public class UIController : MonoBehaviour
     void Start()
     {
         UpdateTimeButtonStates(Time.timeScale);
-		SetActiveToolIcon(ItemData.eToolType.None);
+		SetActiveToolIcon(ToolData.eToolType.None);
 
         // test
         //UnlockTools(0); // lock all
@@ -97,7 +97,7 @@ public class UIController : MonoBehaviour
         if (Input.GetKey(KeyCode.LeftShift))
         {
             // default back to hand
-            SetActiveToolIcon(ItemData.eToolType.None);
+            SetActiveToolIcon(ToolData.eToolType.None);
             _toolsShowing = false;
             ShowToolButtons(false);
 
@@ -143,7 +143,7 @@ public class UIController : MonoBehaviour
 
     public void OnToolButtonClicked(int id)
     {
-		SetActiveToolIcon((ItemData.eToolType)id);
+		SetActiveToolIcon((ToolData.eToolType)id);
 		ShowToolButtons(false);
 		_toolsShowing = false;
 
@@ -176,9 +176,9 @@ public class UIController : MonoBehaviour
         OnTimeStopped(currentScale == 0f);
     }
 
-	private void SetActiveToolIcon(ItemData.eToolType tool)
+	private void SetActiveToolIcon(ToolData.eToolType tool)
 	{
-		if (tool == ItemData.eToolType.None)
+		if (tool == ToolData.eToolType.None)
 		{
 			_activeToolIcon.gameObject.SetActive(false);
 			return;
