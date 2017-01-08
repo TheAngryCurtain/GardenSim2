@@ -9,6 +9,9 @@ public class InteractableObject : MonoBehaviour
     private Color _colorComponent;
     private bool _interactable = false;
 
+    private bool _isHovered = false;
+    public bool IsHovered { get { return _isHovered; } }
+
     protected virtual void Start()
     {
         UpdateAlpha(_defaultAlpha);
@@ -19,6 +22,7 @@ public class InteractableObject : MonoBehaviour
         if (_interactable)
         {
             OnObjectHoverEnter();
+            _isHovered = true;
         }
     }
 
@@ -27,6 +31,7 @@ public class InteractableObject : MonoBehaviour
         if (_interactable)
         {
             OnObjectHoverExit();
+            _isHovered = false;
         }
     }
 

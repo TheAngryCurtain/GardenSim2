@@ -9,6 +9,11 @@ public class TileManager : MonoBehaviour
 
     [SerializeField] private GameObject _dirtMoundPrefab;
 
+    public static int[] ToolScrollXSequence = new int[] { -1, 0, 1, 0 };
+    public static int[] ToolScrollYSequence = new int[] { 0, 1, 0, -1 };
+    public static Vector2 ToolScrollDirection = new Vector2(-1, 0);
+    public static int ToolScrollSequenceIndex = 0;
+
     private Tile[,] _tiles;
 
     void Awake()
@@ -141,5 +146,30 @@ public class TileManager : MonoBehaviour
         {
             OnEnableInteraction(!interactMode);
         }
+    }
+
+    public List<Tile> RequestHighlightRow(int currentX, int currentY, int toolLevel, Vector2 direction)
+    {
+        int numTiles = ToolData.BaseLevelModifier + (ToolData.LevelModifierIncrement * (toolLevel - 1));
+        List<Tile> tiles = new List<Tile>(numTiles);
+        Tile t = null;
+        int x, y;
+
+        for (int i = 1; i < numTiles; ++i)
+        {
+            x = currentX + ((int)direction.x * i);
+            y = currentY + ((int)direction.y * i);
+
+            if (x < 0 || x > _tiles.Length) continue;
+            if (y < 0 || y > _tiles.Length) continue;
+
+            t = _tiles[x, y];
+            if (t != null)
+            {
+                tiles.Add(t);
+            }
+        }
+
+        return tiles;
     }
 }

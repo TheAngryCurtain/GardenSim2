@@ -7,6 +7,9 @@ public class ToolData : ItemData
     [SerializeField] protected eToolType _toolType;
     [SerializeField] protected int _toolLevel;
 
+    public static int BaseLevelModifier = 3;
+    public static int LevelModifierIncrement = 2;
+
     public enum eToolType
     {
         None = -1,
@@ -20,7 +23,7 @@ public class ToolData : ItemData
     public eToolType ToolType { get { return _toolType; } }
     public int ToolLevel { get { return _toolLevel; } }
 
-    public ToolData(string name, eItemType type, string desc, int value, eToolType tType) : base(name, type, desc, value)
+    public ToolData(string name, eItemType type, string desc, int value, eToolType tType, int level = 0) : base(name, type, desc, value)
     {
         _name = name;
         _type = type;
@@ -28,5 +31,6 @@ public class ToolData : ItemData
         _value = value;
         _quantity = 1;
         _toolType = tType;
+        _toolLevel = level;
     }
 }
