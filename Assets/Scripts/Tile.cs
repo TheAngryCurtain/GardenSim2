@@ -48,12 +48,12 @@ public class Tile : InteractableObject, IControllable
 
     public void OnNeighbourChanged()
     {
-        Debug.LogFormat("{0} heard a change from neighbour", this.gameObject.name);
+        //Debug.LogFormat("{0} heard a change from neighbour", this.gameObject.name);
     }
 
     protected override void ClickAction()
     {
-        Debug.Log(this.gameObject.name);
+        Debug.LogFormat("{0}, state: {1}", this.gameObject.name, _state);
 
         eSoilState previous = _state;
         ToolData tool = GameManager.Instance.Game.Player.GetCurrentTool();
