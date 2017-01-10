@@ -7,7 +7,7 @@ public class TileManager : MonoBehaviour
 {
     public Action<bool> OnEnableInteraction;
 
-    [SerializeField] private GameObject _dirtMoundPrefab;
+    [SerializeField] private GameObject[] _dirtMoundPrefabs;
 
     public static int[] ToolScrollXSequence = new int[] { -1, 0, 1, 0 };
     public static int[] ToolScrollYSequence = new int[] { 0, 1, 0, -1 };
@@ -63,7 +63,7 @@ public class TileManager : MonoBehaviour
         switch (t.State)
         {
             case Tile.eSoilState.Dug:
-                GameObject soilObj = (GameObject)Instantiate(_dirtMoundPrefab, t.transform.position, Quaternion.Euler(new Vector3(0f, UnityEngine.Random.Range(0, 360), 0f)));
+                GameObject soilObj = (GameObject)Instantiate(_dirtMoundPrefabs[0], t.transform.position, Quaternion.identity);
                 t.SoilObject = soilObj;
                 break;
         }

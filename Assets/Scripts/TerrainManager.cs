@@ -199,6 +199,8 @@ public class TerrainManager : MonoBehaviour, IControllable
         Vector3 scaleY = Vector3.one;
         Vector3 scaleXZ = Vector3.one;
 
+        GameObject container = new GameObject("Tree Container");
+
         for (int i = 0; i < size; ++i)
         {
             for (int j = 0; j < size; ++j)
@@ -212,6 +214,8 @@ public class TerrainManager : MonoBehaviour, IControllable
                         scaleXZ.x = scaleXZ.z = (float)(treeGen.NextDouble() * (treeOffsetMax - treeOffsetMin)) + treeOffsetMin;
                         rotation.y = treeGen.Next(360);
                         currentTree = (GameObject)Instantiate(_treePrefab, new Vector3(i - terrainOffset, groundHeight, j - terrainOffset), Quaternion.Euler(rotation));
+
+                        currentTree.transform.SetParent(container.transform);
 
                         _treeData.Add(GenerateTreeData(currentTree));
                     }
