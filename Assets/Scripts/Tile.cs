@@ -16,6 +16,14 @@ public class Tile : InteractableObject, IControllable
         Harvested
     }
 
+    public enum eNeighbourDirection
+    {
+        North,
+        East,
+        South,
+        West
+    }
+
     private eSoilState _state = eSoilState.Untouched;
     private int _xIndex;
     private int _yIndex;
@@ -26,13 +34,37 @@ public class Tile : InteractableObject, IControllable
     public int Y { get { return _yIndex; } }
 
     private GameObject _soilObj;
-    public GameObject SoilObject { get { return _soilObj; }  set { _soilObj = value; } }
+    public GameObject SoilObject { get { return _soilObj; } }
+
+    private bool[] _hasNeighbourWithSoil;
+    public bool[] NeighboursWithSoil { get { return _hasNeighbourWithSoil; } }
+
+    // idea for rotating soil matching
+    // keep a count for the number of neighbours who are connected that have soil
+    // as the count goes up, change the prefab
+    // will probably need to keep track of direction of neighbour, so perhaps a struct or nested class for this data
 
     protected override void Start()
     {
         base.Start();
 
         _highlightedGroup = new List<Tile>();
+        _hasNeighbourWithSoil = new bool[4];
+    }
+
+    public void SetSoilObject(GameObject obj)
+    {
+        if (_soilObj != null)
+        {
+            Destroy(_soilObj);
+        }
+
+        _soilObj = obj;
+    }
+
+    public void SetNeighbourWithSoil(eNeighbourDirection dir, bool hasSoil)
+    {
+        _hasNeighbourWithSoil[(int)dir] = hasSoil;
     }
 
     public void SetIndices(int x, int y)
@@ -46,10 +78,22 @@ public class Tile : InteractableObject, IControllable
         EnableInteraction(interact);
     }
 
-    public void OnNeighbourChanged()
-    {
-        //Debug.LogFormat("{0} heard a change from neighbour", this.gameObject.name);
-    }
+    //public void OnNeighbourChanged(Tile neighbour)
+    //{
+    //    if (neighbour.State == eSoilState.Dug)
+    //    {
+    //        if (_state == eSoilState.Dug)
+    //        {
+    //            // TODO both are dug, so change yourself and the neighbours soil prefab
+    //            // get your neighbour count and adjust yourself
+    //            int localCount = GetTotalNeighbourCount();
+    //            int neighbourCount = neighbour.GetTotalNeighbourCount();
+
+
+    //        }
+    //    }
+    //    //Debug.LogFormat("{0} heard a change from neighbour", this.gameObject.name);
+    //}
 
     protected override void ClickAction()
     {

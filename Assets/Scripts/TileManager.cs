@@ -8,6 +8,7 @@ public class TileManager : MonoBehaviour
     public Action<bool> OnEnableInteraction;
 
     [SerializeField] private GameObject[] _dirtMoundPrefabs;
+    public GameObject[] SoilPrefabs { get { return _dirtMoundPrefabs; } }
 
     public static int[] ToolScrollXSequence = new int[] { -1, 0, 1, 0 };
     public static int[] ToolScrollYSequence = new int[] { 0, 1, 0, -1 };
@@ -64,7 +65,7 @@ public class TileManager : MonoBehaviour
         {
             case Tile.eSoilState.Dug:
                 GameObject soilObj = (GameObject)Instantiate(_dirtMoundPrefabs[0], t.transform.position, Quaternion.identity);
-                t.SoilObject = soilObj;
+                t.SetSoilObject(soilObj);
                 break;
         }
     }
@@ -123,11 +124,11 @@ public class TileManager : MonoBehaviour
             neighbours.Add(_tiles[right, tileZ]);
         }
 
-        NotifyNeighboursOfChange(neighbours);
+        NotifyNeighboursOfChange(_tiles[tileX, tileZ], neighbours);
     }
 
     // TODO this will need some parameters for the type of change
-    private void NotifyNeighboursOfChange(List<Tile> validNeighbours)
+    private void NotifyNeighboursOfChange(Tile changed, List<Tile> validNeighbours)
     {
         Tile t = null;
         for (int i = 0; i < validNeighbours.Count; ++i)
@@ -135,7 +136,95 @@ public class TileManager : MonoBehaviour
             t = validNeighbours[i];
             if (t != null)
             {
-                t.OnNeighbourChanged();
+                //t.OnNeighbourChanged(changed);
+                HandleNeighbourChanged(changed, t);
+            }
+        }
+    }
+
+    private void HandleNeighbourChanged(Tile changed, Tile neighbour)
+    {
+        if (changed.State == Tile.eSoilState.Dug)
+        {
+            if (neighbour.State == Tile.eSoilState.Dug)
+            {
+                // update the neighbours with soil
+                int diffX = changed.X - neighbour.X;
+                int diffZ = changed.Y - neighbour.Y;
+                bool changeMade = false;
+
+                if (diffX < 0)
+                {
+                    // neighbour is to the right
+                    changed.SetNeighbourWithSoil(Tile.eNeighbourDirection.East, true);
+                    neighbour.SetNeighbourWithSoil(Tile.eNeighbourDirection.West, true);
+                }
+                else if (diffX > 0)
+                {
+                    // neighbour is to the left
+                    changed.SetNeighbourWithSoil(Tile.eNeighbourDirection.West, true);
+                    neighbour.SetNeighbourWithSoil(Tile.eNeighbourDirection.East, true);
+                }
+
+                // since soil changes only matter in the 4 cardinal directions, if the x was changed, the z can't also
+                if (!changeMade)
+                {
+                    if (diffZ < 0)
+                    {
+                        // neighbour is above
+                        changed.SetNeighbourWithSoil(Tile.eNeighbourDirection.North, true);
+                        neighbour.SetNeighbourWithSoil(Tile.eNeighbourDirection.South, true);
+                    }
+                    else if (diffZ > 0)
+                    {
+                        // neighbour is below
+                        changed.SetNeighbourWithSoil(Tile.eNeighbourDirection.South, true);
+                        neighbour.SetNeighbourWithSoil(Tile.eNeighbourDirection.North, true);
+                    }
+                }
+
+                UpdateSoilPrefab(changed);
+                UpdateSoilPrefab(neighbour);
+            }
+        }
+    }
+
+    private void UpdateSoilPrefab(Tile t)
+    {
+        bool[] directionsWithSoil = t.NeighboursWithSoil;
+        GameObject requiredPrefab = null;
+        Transform facingDirection = null;
+
+        for (int i = 0; i < directionsWithSoil.Length; i++)
+        {
+            if (directionsWithSoil[i] == false) continue;
+            else
+            {
+                // found one with soil, start searching from the next one
+                for (int j = i + 1; j < directionsWithSoil.Length; j++)
+                {
+                    if (directionsWithSoil[j] == false) continue;
+                    else
+                    {
+                        switch ((Tile.eNeighbourDirection)j)
+                        {
+                            // can't be north, as it would at least be the one found above
+
+                            case Tile.eNeighbourDirection.East:
+                                //
+                                break;
+
+                            case Tile.eNeighbourDirection.South:
+                                // N and 
+                                break;
+
+                            case Tile.eNeighbourDirection.West:
+                                break;
+                        }
+                    }
+                }
+
+                break;
             }
         }
     }
