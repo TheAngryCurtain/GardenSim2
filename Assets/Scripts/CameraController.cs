@@ -20,6 +20,9 @@ public class CameraController : MonoBehaviour, IControllable
 	private	float _scrollSpeed = 15f;
     private float _raycastDist = 100f;
 
+    private float _screenMarginX = 0.05f;
+    private float _screenMarginY = 0.075f;
+
     private Vector3 _activeZoomPosition;
 	private float _currentZoomLevel;
 	private Transform _leftEdge;
@@ -46,9 +49,10 @@ public class CameraController : MonoBehaviour, IControllable
 		GameManager.Instance.InputController.SetControllable(this, ControllableType.Axis);
         GameManager.Instance.InputController.SetControllable(this, ControllableType.Scroll);
 		GameManager.Instance.InputController.SetControllable(this, ControllableType.Click);
+        GameManager.Instance.InputController.SetControllable(this, ControllableType.Position);
     }
 
-	public void AcceptMouseAction(MouseAction a, Vector3 mousePosition)
+    public void AcceptMouseAction(MouseAction a, Vector3 mousePosition)
     {
 		//Debug.LogFormat("action: {0}, pos: {1}", a, mousePosition);
         if (a == MouseAction.LeftClick)
@@ -85,7 +89,31 @@ public class CameraController : MonoBehaviour, IControllable
 
     public void AcceptMousePosition(Vector3 pos)
     {
+        float horizontalEdgePercent = Screen.width * _screenMarginX;
+        float verticalEdgePercent = Screen.height * _screenMarginY;
 
+        float x = 0;
+        float y = 0;
+
+        if (pos.x < 0 + horizontalEdgePercent)
+        {
+            x = -1;
+        }
+        else if (pos.x > Screen.width - horizontalEdgePercent)
+        {
+            x = 1;
+        }
+
+        if (pos.y < 0 + verticalEdgePercent)
+        {
+            y = -1;
+        }
+        else if (pos.y > Screen.height - verticalEdgePercent)
+        {
+            y = 1;
+        }
+
+        moveCamera(x, y);
     }
 
     private void InteractWithWorld(Vector3 pos)
